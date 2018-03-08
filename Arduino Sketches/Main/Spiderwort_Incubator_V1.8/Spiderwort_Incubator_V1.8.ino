@@ -67,14 +67,14 @@
 
 // Pin assignment constants
 #define PINASSIGN_CO2SENSOR_RX 2
-#define PINASSIGN_CO2SENSOR_TX 11 // I'm not sure if this pin exists in our implementation, but we'll try it like this as we aren't trying to control the device
+#define PINASSIGN_CO2SENSOR_TX 3
 #define PINASSIGN_ONEWIRE_BUS 4
 #define PINASSIGN_HEATCHAMBER 5
 #define PINASSIGN_FAN 6
-#define PINASSIGN_CO2 10
 #define PINASSIGN_HEATDOOR 8
-#define PINASSIGN_O2SENSOR_RX 3
+#define PINASSIGN_O2SENSOR_RX 10
 #define PINASSIGN_O2SENSOR_TX 12 // I'm not sure if this pin exists in our implementation, but we'll try it like this as we aren't trying to control the sensor
+#define PINASSIGN_CO2RELAY 7
 #define PINASSIGN_NRELAY 7
 /*  ATMEGA328 Pins In Use:
  *    D2 - Rx for CO2 sensor
@@ -176,7 +176,7 @@ struct StatusStruct {
   boolean PreviousAlarmO2;
 };
 
-// Limited globals
+// Globals
 SettingsStruct settingsHolder;
 StatusStruct statusHolder;
 
@@ -187,7 +187,7 @@ DallasTemperature sensors(&oneWire); // Pass our oneWire reference to Dallas Tem
 ////////* COZIR CO2 SENSOR *////////
 SoftwareSerial nss(PINASSIGN_CO2SENSOR_RX, PINASSIGN_CO2SENSOR_TX); // Rx,Tx
 
-////////* O2 SENSOR *////////
+////////* LUMINOX O2 SENSOR *////////
 SoftwareSerial oss(PINASSIGN_O2SENSOR_RX, PINASSIGN_O2SENSOR_TX); // Rx,Tx
 
 /////////* LCD DISPLAY AND MENU *///////// 
@@ -203,8 +203,8 @@ void setup()
   digitalWrite(PINASSIGN_HEATCHAMBER, LOW);// Set LOW (heater off)
   pinMode(PINASSIGN_HEATDOOR,OUTPUT);      //Sets pin for controlling Door relay
   digitalWrite(PINASSIGN_HEATDOOR, LOW);   // Set LOW (Door heater off)
-  pinMode(PINASSIGN_CO2, OUTPUT);          // Sets pin for controlling CO2 solenoid relay
-  digitalWrite(PINASSIGN_CO2, LOW);        // Set LOW (solenoid closed off)
+  pinMode(PINASSIGN_CO2RELAY, OUTPUT);          // Sets pin for controlling CO2 solenoid relay
+  digitalWrite(PINASSIGN_CO2RELAY, LOW);        // Set LOW (solenoid closed off)
   pinMode(PINASSIGN_NRELAY, OUTPUT);       // Sets pin for controlling Nitrogen solenoid relay
   digitalWrite(PINASSIGN_NRELAY, LOW);     // Set LOW (solenoid closed off)
   
@@ -371,7 +371,7 @@ void loop()
   if (settingsHolder.CO2Enable) {
     if (statusHolder.CO2On) {
       if (nowTime >= statusHolder.CO2Checkpoint) {
-        digitalWrite(PINASSIGN_CO2, LOW);
+        digitalWrite(PINASSIGN_CO2RELAY, LOW);
         if (DEBUG_GENERAL) {
           Serial.print(F("CO2 shutdown: "));
           Serial.print((nowTime-statusHolder.CO2Checkpoint));
@@ -524,9 +524,9 @@ void loop()
       if (statusHolder.CO2Reading > (settingsHolder.CO2SetPoint * CO2_STEP_THRESH)) {
         if (nowTime > statusHolder.CO2Actionpoint + CO2_BLEEDTIME_STEPPING) {
           // In stepping mode and not worried about bleed delay.
-          digitalWrite(PINASSIGN_CO2, HIGH);
+          digitalWrite(PINASSIGN_CO2RELAY, HIGH);
           delay(CO2_DELTA_STEPPING);
-          digitalWrite(PINASSIGN_CO2, LOW);
+          digitalWrite(PINASSIGN_CO2RELAY, LOW);
           statusHolder.CO2Actionpoint = nowTime;
           if (DEBUG_GENERAL) {
             Serial.println(F("CCCCCCCC:CO2 stepping mode activated."));
@@ -548,7 +548,7 @@ void loop()
           }
           statusHolder.CO2On = true;
           statusHolder.CO2Checkpoint = (nowTime + CO2_DELTA_JUMP);
-          digitalWrite(PINASSIGN_CO2, HIGH);
+          digitalWrite(PINASSIGN_CO2RELAY, HIGH);
           if (DEBUG_GENERAL) {
             Serial.print(F("CCCCCCCC:CO2 opening from "));
             Serial.print(nowTime);
@@ -563,7 +563,7 @@ void loop()
       }
     } else {
       // CO2 level above setpoint.
-      digitalWrite(PINASSIGN_CO2, LOW); // just to make sure
+      digitalWrite(PINASSIGN_CO2RELAY, LOW); // just to make sure
       statusHolder.CO2Started = false;
       if (statusHolder.CO2Reading > (settingsHolder.CO2SetPoint * ALARM_THRESH)) {
         // Alarm
@@ -733,7 +733,7 @@ void GetTemperatureReadings() {
  */
 
 void ShutdownCO2System() {
-  digitalWrite(PINASSIGN_CO2, LOW);   // Set LOW (solenoid closed off)
+  digitalWrite(PINASSIGN_CO2RELAY, LOW);   // Set LOW (solenoid closed off)
   statusHolder.CO2On = false;
   statusHolder.CO2Stepping = false;
   statusHolder.CO2Started = false;
@@ -747,11 +747,20 @@ void GetCO2Reading() {
   unsigned long emergOut = millis() + ALARM_CO2_READING_PERIOD;
   
   // Flush any data on the Rx
+  if (DEBUG_CO2) {
+    Serial.print(F("Flushing the CO2 datastream"));
+  }
   while(nss.available()) {
     nss.read();
+    if (DEBUG_CO2) {
+      Serial.print(".");
+    }
   }
   
   for (int i = 0; i<1; i++) {
+    if (DEBUG_CO2) {
+      Serial.println(F("Reading the current CO2 value."));
+    }
     while(bufferStr[ind-1] != 0x0A && millis() < emergOut) {
       if(nss.available()) {
         bufferStr[ind] = nss.read();
