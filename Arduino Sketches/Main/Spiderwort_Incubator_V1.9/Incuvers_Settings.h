@@ -118,7 +118,7 @@ class IncuversSettingsHandler {
     
     int VerifyEEPROMHeader(int startAddress, boolean isHardware) {
       #ifdef DEBUG_EEPROM
-        Serial.println(F("  Call to IncuversSettingsHandler::VerifyHeader()"));
+        Serial.println(F("VerifyHead"));
       #endif
       
       byte eepromContent[4];
@@ -156,7 +156,7 @@ class IncuversSettingsHandler {
       }
       
       #ifdef DEBUG_EEPROM
-        Serial.print(F("  /VerifyHeader(); returning: "));
+        Serial.print(F("  /VerifyHead; returning: "));
         Serial.println(ret);
       #endif
       
@@ -165,7 +165,7 @@ class IncuversSettingsHandler {
 
     boolean ReadHardwareSettings() {
       #ifdef DEBUG_EEPROM
-        Serial.println(F("Call to IncuversSettingsHandler::ReadHardwareSettings()"));
+        Serial.println(F("HardwareSet"));
       #endif
       int headerCheck;
       HardwareStruct hardwareData;
@@ -175,7 +175,7 @@ class IncuversSettingsHandler {
       if (headerCheck == -1) {
         // uninitialized hardware
         #ifdef DEBUG_EEPROM
-          Serial.println(F("  The hardware in this incubator has not been initialized, defaulting to original specs."));
+          Serial.println(F("\tNo hardware settings found, defaulting to original specs."));
         #endif
         
         this->settingsHardware.identification = F("0.9.3");
@@ -227,7 +227,7 @@ class IncuversSettingsHandler {
       }
     
       #ifdef DEBUG_EEPROM
-        Serial.println(F("Return from ReadHardwareSettings()"));
+        Serial.println(F("/HardwareSet"));
       #endif
       return true;
     }
@@ -235,8 +235,8 @@ class IncuversSettingsHandler {
     void ImportSettings_17() {
       SettingsStruct_17 settingsHolder_17;
       #ifdef DEBUG_EEPROM
-        Serial.println(F("Call to ImportantSettings_17()"));
-        Serial.print(F("  "));
+        Serial.println(F("Import17()"));
+        Serial.print(F("\t"));
         Serial.print(sizeof(settingsHolder_17));
         Serial.print(F(" bytes w/ ID: "));
         Serial.print(SETTINGS_IDENT_17);
@@ -272,15 +272,15 @@ class IncuversSettingsHandler {
       this->settingsHolder.O2SetPoint = settingsHolder_17.O2SetPoint;
       
       #ifdef DEBUG_EEPROM
-        Serial.println(F("/ImportSettings_17()"));
+        Serial.println(F("/Import17"));
       #endif
     }
     
     void ImportSettings_14() {
       SettingsStruct_14 settingsHolder_14;
       #ifdef DEBUG_EEPROM
-        Serial.println(F("Call to ImportantSettings_14()"));
-        Serial.print(F("  "));
+        Serial.println(F("Import14"));
+        Serial.print(F("\t"));
         Serial.print(sizeof(settingsHolder_14));
         Serial.print(F(" bytes w/ ID: "));
         Serial.print(SETTINGS_IDENT_14);
@@ -306,14 +306,14 @@ class IncuversSettingsHandler {
       this->settingsHolder.CO2SetPoint = settingsHolder_14.CO2SetPoint;
       
       #ifdef DEBUG_EEPROM
-        Serial.println(F("End of ImportSettings_14()"));
+        Serial.println(F("/Import14"));
       #endif
     }
 
     int ReadCurrentSettings() {
       #ifdef DEBUG_EEPROM
-        Serial.println(F("Call to ReadCurrentSettings()"));
-        Serial.print(F("  "));
+        Serial.println(F("ReadSettings"));
+        Serial.print(F("\t"));
         Serial.print(sizeof(settingsHolder));
         Serial.print(F(" bytes w/ ID: "));
         Serial.print(SETTINGS_IDENT_CURR);
@@ -326,7 +326,7 @@ class IncuversSettingsHandler {
       }
     
       #ifdef DEBUG_EEPROM
-        Serial.println(F("End of ReadCurrentSettings()"));
+        Serial.println(F("/ReadSettings"));
       #endif
       return 1;
     }
@@ -337,7 +337,7 @@ class IncuversSettingsHandler {
     void ResetSettingsToDefaults()
     {
       #ifdef DEBUG_EEPROM
-        Serial.println(F("Call to ResetSettingsToDefaults()"));
+        Serial.println(F("Defaults"));
       #endif
       // Fan setup
       this->settingsHolder.fanMode = 4;
@@ -353,19 +353,19 @@ class IncuversSettingsHandler {
       this->settingsHolder.O2Relay = 0;
       this->settingsHolder.O2SetPoint = OO_DEF; 
       #ifdef DEBUG_EEPROM
-        Serial.println(F("Done ResetSettingsToDefaults()"));
+        Serial.println(F("/Defaults"));
       #endif
     }
     
     void PerformSaveSettings() {
       #ifdef DEBUG_EEPROM
-        Serial.println(F("Call to PerformSaveSettings()"));
+        Serial.println(F("SaveSettings"));
       #endif
     
       this->settingsHolder.ident = SETTINGS_IDENT_CURR;
     
       #ifdef DEBUG_EEPROM
-        Serial.print(F("  ID: "));
+        Serial.print(F("\tID: "));
         Serial.print(SETTINGS_IDENT_CURR);
         Serial.print(", ");
         Serial.print(sizeof(settingsHolder));
@@ -381,13 +381,13 @@ class IncuversSettingsHandler {
       
       #ifdef DEBUG_EEPROM
         Serial.println("  Done.");
-        Serial.println(F("End of PerformSaveSettings()"));
+        Serial.println(F("/SaveSettings"));
       #endif
     }
     
     int PerformLoadSettings() {
       #ifdef DEBUG_EEPROM
-        Serial.println(F("Call to PerformLoadSettings()"));
+        Serial.println(F("LoadSettings"));
       #endif
       int runMode = 0;
       bool hardwareResult = ReadHardwareSettings();
@@ -396,7 +396,7 @@ class IncuversSettingsHandler {
       if (settingsRes == -1) {
         runMode = 2;
         #ifdef DEBUG_EEPROM
-          Serial.println(F("  The settings for this incubator have not been saved, using defaults."));
+          Serial.println(F("\tNo settings found, using defaults."));
         #endif
         ResetSettingsToDefaults();
       } else {
@@ -416,7 +416,7 @@ class IncuversSettingsHandler {
       }
     
       #ifdef DEBUG_EEPROM
-        Serial.println(F("End of PerformLoadSettings()"));
+        Serial.println(F("/LoadSettings"));
       #endif
       return runMode;
     }
@@ -438,18 +438,6 @@ class IncuversSettingsHandler {
         Serial.print(this->personalityCount);
         Serial.println(F(" personalities enabled."));
       #endif
-    
-        // Temp Settings
-        #ifdef DEBUG_EEPROM
-          Serial.print(F("Heating Enabled: "));
-          Serial.println();
-          Serial.print(F("Temperature setpoint: "));
-          Serial.println(this->settingsHolder.heatSetPoint);
-          Serial.println();
-          Serial.println(F("Settings retrieved."));
-        #endif
-          
-      
     }
 
     void AttachIncuversModule(IncuversHeatingSystem* iHeat) {
@@ -631,6 +619,10 @@ class IncuversSettingsHandler {
       return this->settingsHardware.secondGasSensor;
     }
 
+    String getHardware() {
+      return this->settingsHardware.identification;  
+    }
+    
     String getSerial() {
       return this->settingsHardware.serial;
     }

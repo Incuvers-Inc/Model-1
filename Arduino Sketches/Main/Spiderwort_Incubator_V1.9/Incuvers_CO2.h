@@ -32,16 +32,16 @@ class IncuversCO2System {
 
     void CheckJumpStatus() {
       #ifdef DEBUG_CO2
-        Serial.println(F("Call to IncuversCO2System::CheckSteppingStatus()"));
+        Serial.println(F("CO2::CheckJump"));
       #endif
 
       if (this->on) {
         if (this->tickTime >= this->shutCO2At) {
           digitalWrite(pinAssignment_Valve, LOW);
           #ifdef DEBUG_CO2 
-            Serial.print(F("CO2 shutdown: "));
+            Serial.print(F("CO2 shut "));
             Serial.print((this->tickTime-this->shutCO2At));
-            Serial.println(F("ms beyond checkpoint"));
+            Serial.println(F("ms late"));
           #endif
           this->on = false;
           this->actionpoint = this->tickTime;
@@ -51,7 +51,7 @@ class IncuversCO2System {
 
     void GetCO2Reading_Cozir() {
       #ifdef DEBUG_CO2 
-          Serial.println(F("Call to GetCO2Reading_Cozir()"));
+          Serial.println(F("GetCO2Reading_Cozir"));
       #endif
     
       String cozirString = "";
@@ -69,15 +69,14 @@ class IncuversCO2System {
         if (reading > 0 && reading < 30) {
           level = (float)((CO2_MULTIPLIER * reading)/10000);  
           #ifdef  DEBUG_CO2
-            Serial.print("  CO2 level is computed to be: ");
+            Serial.print("  CO2 level: ");
             Serial.println(level);
           #endif
           i = 2; // escape the loop.
         } else {
           #ifdef DEBUG_CO2
-            Serial.print(F("  Zut alors!  The CO2 sensor returned an invalid reading on attempt "));
-            Serial.print(i);
-            Serial.println(F(", trying again!"));
+            Serial.print(F("\tCO2 sensor returned invalid read, attempt"));
+            Serial.println(i);
           #endif 
         }
       }
@@ -85,7 +84,7 @@ class IncuversCO2System {
     
     void CheckCO2Maintenance() {
       #ifdef DEBUG_CO2 
-        Serial.print(F("Call to CheckCO2Maintenance()"));
+        Serial.print(F("CO2Maintenance()"));
       #endif
       if (level < setPoint ) {
         if (level > (setPoint * CO2_STEP_THRESH)) {
@@ -96,7 +95,7 @@ class IncuversCO2System {
             digitalWrite(pinAssignment_Valve, LOW);
             this->actionpoint = this->tickTime;
             #ifdef DEBUG_CO2 
-              Serial.println(F("    CO2 stepping mode activated."));
+              Serial.println(F("\tCO2 step mode"));
             #endif
           } // there is no else, we need to wait for the bleedtime to expire.
         } else {
@@ -109,7 +108,7 @@ class IncuversCO2System {
               if (this->startCO2At + ALARM_CO2_OPEN_PERIOD < this->tickTime) {
                 //statusHolder.AlarmCO2UnderSaturation = true;
                 #ifdef DEBUG_CO2 
-                  Serial.println(F("    CO2 under-saturation alarm thrown."));
+                  Serial.println(F("\tCO2 under-saturation alarm thrown"));
                 #endif
               }
             }
@@ -117,14 +116,14 @@ class IncuversCO2System {
             this->shutCO2At = (this->tickTime + CO2_DELTA_JUMP);
             digitalWrite(pinAssignment_Valve, HIGH);
             #ifdef DEBUG_CO2 
-              Serial.print(F("    CO2 opening from "));
+              Serial.print(F("\tCO2 opening from "));
               Serial.print(this->tickTime);
               Serial.print(F(" until "));
               Serial.println(this->shutCO2At);
             #endif
           } else {
            #ifdef DEBUG_CO2 
-             Serial.println(F("    CO2 under-saturated but bleed time remaining."));
+             Serial.println(F("\tCO2 under but bleed remaining"));
            #endif 
           }
         }
@@ -136,7 +135,7 @@ class IncuversCO2System {
           // Alarm
           //statusHolder.AlarmCO2OverSaturation = true;
           #ifdef DEBUG_CO2 
-            Serial.println(F("    O2 over-saturation alarm thrown."));
+            Serial.println(F("\tO2 over-saturation alarm"));
           #endif
         }
       }
@@ -145,14 +144,15 @@ class IncuversCO2System {
   public:
     void SetupCO2(int rxPin, int txPin, int gasMode, int relayPin) {
       #ifdef DEBUG_CO2
-        Serial.println(F("Call to IncuversCO2System::SetupCO2()"));
+        Serial.println(F("CO2::Setup"));
       #endif
       
       if (gasMode == 0) {
         #ifdef DEBUG_CO2
-          Serial.println(F("CO2 Disabled"));
+          Serial.println(F("Disabled"));
         #endif
         this->enabled = false;
+        level = -100;
       } else {
         this->enabled = true;
         // Setup Serial Interface
@@ -164,12 +164,12 @@ class IncuversCO2System {
         pinMode(this->pinAssignment_Valve, OUTPUT);
         
         #ifdef DEBUG_CO2
-          Serial.println(F("CO2 Enabled."));
-          Serial.print(F("  RxPin: "));
+          Serial.println(F("Enabled"));
+          Serial.print(F("  Rx: "));
           Serial.println(rxPin);
-          Serial.print(F("  TxPin: "));
+          Serial.print(F("  Tx: "));
           Serial.println(txPin);
-          Serial.print(F("  Relay Pin: "));
+          Serial.print(F("  Relay: "));
           Serial.println(relayPin);
         #endif
   

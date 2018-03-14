@@ -40,14 +40,15 @@
 #define MENU_UI_REDRAW_DELAY 500
 #define RESET_AFTER_DELTA 2678400000
 
-// Debugging definitions, remove definition to disable.  Supported debugging variants: DEBUG_GENERAL, DEBUG_SERIAL, DEBUG_EEPROM, DEBUG_UI, DEBUG_CO2, DEBUG_O2, DEBUG_TEMP
-#define DEBUG_GENERAL true
+// Debugging definitions, remove definition to disable.  Supported debugging variants: DEBUG_GENERAL, DEBUG_SERIAL, DEBUG_EEPROM, DEBUG_UI, DEBUG_CO2, DEBUG_O2, DEBUG_TEMP, DEBUG_MEMORY
+//define DEBUG_GENERAL true
 //define DEBUG_SERIAL true
 //define DEBUG_EEPROM true
-#define DEBUG_UI true
+//define DEBUG_UI true
 //define DEBUG_CO2 true
 //define DEBUG_O2 true
-#define DEBUG_TEMP true
+//define DEBUG_TEMP true
+#define DEBUG_MEMORY true
 
 // Pin assignment constants (note these are for the default 0.9.3 build and may be overridden by the hardware settings.)
 #define PINASSIGN_CO2SENSOR_RX 2

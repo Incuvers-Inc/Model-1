@@ -38,7 +38,7 @@ class IncuversHeatingSystem {
     
     void GetTemperatureReadings() {
       #ifdef DEBUG_TEMP
-        Serial.println(F("Call to IncuversHeatingSystem::GetTemperatureReadings()"));
+        Serial.println(F("Heat::GetTempRead"));
       #endif
       boolean updateCompleted = false;
       int i = 0;
@@ -51,9 +51,9 @@ class IncuversHeatingSystem {
         this->tempChamber = this->tempSensors->getTempC(this->sensorAddrChamberTemp);
         
         #ifdef DEBUG_TEMP
-          Serial.print(F("Door temp. reading: "));
+          Serial.print(F("Door: "));
           Serial.print(this->tempDoor);
-          Serial.print(F("*C  Chamber temp. reading: "));
+          Serial.print(F("*C  Chamber: "));
           Serial.print(this->tempChamber);
           Serial.println("*C");
         #endif  
@@ -63,8 +63,8 @@ class IncuversHeatingSystem {
         } else {
           i++;
           #ifdef DEBUG_TEMP
-            Serial.print(i);
-            Serial.println(F("Oh Nooo!  The temperature sensors returned an error code/invalid reading, trying again!"));
+            Serial.print(F("Temperature sensors returned invalid reading"));
+            Serial.println(i);
           #endif 
           if (i > 5) {
             //statusHolder.AlarmTempSensorMalfunction = true;
@@ -76,13 +76,13 @@ class IncuversHeatingSystem {
   
     void CheckSteppingStatus() {
       #ifdef DEBUG_TEMP
-        Serial.println(F("Call to IncuversHeatingSystem::CheckSteppingStatus()"));
+        Serial.println(F("Heat::CheckStep"));
       #endif
       if (this->heatOn_Chamber && this->stepping_Chamber) {
         if (this->tickTime >= this->shutChamberHeatAt) {
           digitalWrite(this->pinAssignment_Chamber, LOW);
           #ifdef DEBUG_TEMP
-            Serial.print(F("Shut chamber heater "));
+            Serial.print(F("Shut chamber "));
             Serial.print((this->tickTime - this->shutChamberHeatAt));
             Serial.println(F("ms late"));
           #endif
@@ -95,7 +95,7 @@ class IncuversHeatingSystem {
         if (this->tickTime >= this->shutDoorHeatAt) {
           digitalWrite(this->pinAssignment_Door, LOW);
           #ifdef DEBUG_TEMP
-            Serial.print(F("Shut door heater "));
+            Serial.print(F("Shut door "));
             Serial.print((this->tickTime - this->shutDoorHeatAt));
             Serial.println(F("ms late"));
           #endif
@@ -119,7 +119,7 @@ class IncuversHeatingSystem {
             stepping_Chamber = true;
             shutChamberHeatAt = tickTime + TEMPERATURE_STEP_LEN;
             #ifdef DEBUG_TEMP
-            Serial.println(F("Chamber heater stepping mode."));
+            Serial.println(F("Chamber step mode"));
             #endif
           }
         } else {
@@ -135,7 +135,7 @@ class IncuversHeatingSystem {
             stepping_Chamber = false;
             shutChamberHeatAt = tickTime + ALARM_TEMP_ON_PERIOD;
             #ifdef DEBUG_TEMP
-            Serial.println(F("Chamber heater starting."));
+            Serial.println(F("Chamber jump"));
             #endif
           }
         }
@@ -146,14 +146,14 @@ class IncuversHeatingSystem {
           digitalWrite(PINASSIGN_HEATCHAMBER, LOW);
           heatOn_Chamber = false;
           #ifdef DEBUG_TEMP
-          Serial.println(F("Chamber heater shutdown."));
+          Serial.println(F("Chamber shutdown"));
           #endif
         }
         if (tempChamber > (setPoint * ALARM_THRESH)) {
           // Alarm
           //statusHolder.AlarmHeatChamberOverTemp = true;
           #ifdef DEBUG_TEMP
-          Serial.println(F("Chamber over-temp alarm thrown."));
+          Serial.println(F("Chamber over-temp alarm"));
           #endif
         }
       }
@@ -171,7 +171,7 @@ class IncuversHeatingSystem {
             stepping_Door = true;
             shutDoorHeatAt = tickTime + TEMPERATURE_STEP_LEN;
             #ifdef DEBUG_TEMP
-            Serial.println(F("Door heater stepping mode."));
+            Serial.println(F("Door step mode"));
             #endif
           }
         } else {
@@ -187,7 +187,7 @@ class IncuversHeatingSystem {
             stepping_Door = false;
             shutDoorHeatAt = tickTime + ALARM_TEMP_ON_PERIOD;
             #ifdef DEBUG_TEMP
-            Serial.println(F("Door heater starting."));
+            Serial.println(F("Door jump mode"));
             #endif
           }
         }
@@ -198,14 +198,14 @@ class IncuversHeatingSystem {
           digitalWrite(PINASSIGN_HEATDOOR, LOW);
           heatOn_Door = false;
           #ifdef DEBUG_TEMP
-          Serial.println(F("Door heater shutdown."));
+          Serial.println(F("Door shutdown"));
           #endif
         }
         if (tempDoor > (setPoint * ALARM_THRESH)) {
           // Alarm
           //statusHolder.AlarmHeatDoorOverTemp = true;
           #ifdef DEBUG_TEMP
-          Serial.println(F("Door over-temp alarm thrown."));
+          Serial.println(F("Door over-temp alarm"));
           #endif
         }
       }
@@ -214,7 +214,7 @@ class IncuversHeatingSystem {
   public:
     void SetupHeating(int doorPin, int chamberPin, int oneWirePin, byte doorSensorID[8], byte chamberSensorID[8], int heatMode, int fanPin, int fanMode) {
       #ifdef DEBUG_TEMP
-        Serial.println(F("Call to IncuversHeatingSystem::SetHeaterPinAssignments()"));
+        Serial.println(F("Heat::Setup"));
       #endif
       
       // Setup heaters 
@@ -239,6 +239,8 @@ class IncuversHeatingSystem {
   
       if (heatMode == 0) {
         this->heatEnabled = false;
+        tempDoor = -100;
+        tempChamber = -100;
       } else {
         this->heatEnabled = true;
       }
@@ -261,7 +263,9 @@ class IncuversHeatingSystem {
 
     void UpdateHeatMode(int mode) {
       if (mode == 0) {
-        this->heatEnabled = false;
+        heatEnabled = false;
+        tempDoor = -100;
+        tempChamber = -100;
       } else {
         this->heatEnabled = true;
       }
@@ -278,7 +282,7 @@ class IncuversHeatingSystem {
   
     void MakeSafeState() {
       #ifdef DEBUG_TEMP
-        Serial.println(F("Call to IncuversHeatingSystem::MakeSafeState()"));
+        Serial.println(F("Heat::SafeState"));
       #endif
       digitalWrite(this->pinAssignment_Door, LOW);     // Set LOW (heater off)
       digitalWrite(this->pinAssignment_Chamber, LOW);  // Set LOW (heater off)

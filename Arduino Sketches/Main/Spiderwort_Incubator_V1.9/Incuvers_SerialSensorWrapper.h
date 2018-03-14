@@ -15,7 +15,7 @@ class IncuversSerialSensor {
 
     String GetSerialSensorReading(int minLen, int maxLen) {
       #ifdef DEBUG_SERIAL
-          Serial.print(F("Call to GetSerialSensorReading("));
+          Serial.print(F("GetSSR("));
           Serial.print(minLen);
           Serial.print(F(","));
           Serial.print(maxLen);
@@ -34,6 +34,12 @@ class IncuversSerialSensor {
       long escapeAfter = millis() + READSENSOR_TIMEOUT;
       
       while (!dataReadComplete) {
+        #ifdef DEBUG_SERIAL
+          if (this->ss->available() > 0) {
+            Serial.print(this->ss->available());
+            Serial.println(F(" bytes available "));
+          }
+        #endif
         while(this->ss->available() && !stringComplete) {
           inChar = (char)this->ss->read();         // grab the next char
           currString += inChar;             // add the received char to CozirString
@@ -74,26 +80,18 @@ class IncuversSerialSensor {
         
         j++;
         
-        #ifdef DEBUG_SERIAL
-          if (this->ss->available()) {
-            Serial.print(F("OuterWhileLoop "));
-            Serial.print(this->ss->available());
-            Serial.println(F(" bytes available "));
-          }
-        #endif
-        
         if(escapeAfter < millis()){
           #ifdef DEBUG_SERIAL
-            Serial.print(F("Escaping after "));
+            Serial.print(F("\tEscaping after "));
             Serial.print(j);
-            Serial.println(F(" checks for data."));
+            Serial.println(F(" loops"));
           #endif
           dataReadComplete=true;
         }
     
       }
       #ifdef DEBUG_SERIAL
-        Serial.print(F("    Returning string: "));
+        Serial.print(F("\tReturning: "));
         Serial.println(currString);
       #endif
       return currString;
@@ -116,27 +114,25 @@ boolean IsNumeric(String string) {
 
 float GetDecimalSensorReading(char index, String sensorOutput, float invalidValue) {
   #ifdef DEBUG_SERIAL
-    Serial.print(F("Call to GetDecimalSensorReading('"));
+    Serial.print(F("GetDSR('"));
     Serial.print(index);
     Serial.print(F("','"));
     Serial.print(sensorOutput);
-    Serial.print(F(","));
-//    Serial.print(ínvalidValue);
-    Serial.println(F(")"));
+    Serial.println(F("')"));
   #endif
   float value = invalidValue;
 
   int iIndex =   sensorOutput.lastIndexOf(index);
   String shortenedString = sensorOutput.substring(iIndex+2, sensorOutput.length());
   #ifdef DEBUG_SERIAL
-    Serial.print(F("    Shortened string: "));
+    Serial.print(F("\tShort: "));
     Serial.println(shortenedString);
   #endif
   int iSpace = shortenedString.indexOf(" ");
   String readingString = shortenedString.substring(0, iSpace);
   readingString.trim();
   #ifdef DEBUG_SERIAL
-    Serial.print(F("    Reading string: "));
+    Serial.print(F("\tReading: "));
     Serial.println(readingString);
   #endif
   if (IsNumeric(readingString)) {
@@ -144,7 +140,7 @@ float GetDecimalSensorReading(char index, String sensorOutput, float invalidValu
   }
 
   #ifdef DEBUG_SERIAL
-    Serial.print(F("    Returning value: "));
+    Serial.print(F("\tValue: "));
     Serial.println(value);
   #endif
   return value;
@@ -153,27 +149,25 @@ float GetDecimalSensorReading(char index, String sensorOutput, float invalidValu
 
 int GetIntegerSensorReading(char index, String sensorOutput, int invalidValue) {
   #ifdef DEBUG_SERIAL
-    Serial.print(F("Call to GetIntegerSensorReading('"));
+    Serial.print(F("GetISR('"));
     Serial.print(index);
     Serial.print(F("','"));
     Serial.print(sensorOutput);
-    Serial.print(F("',"));
-//    Serial.print(ínvalidValue.toString());
-    Serial.println(F(")"));
+    Serial.println(F("')"));
   #endif
   int value = invalidValue;
 
   int iIndex = sensorOutput.lastIndexOf(index);
   String shortenedString = sensorOutput.substring(iIndex+2, sensorOutput.length());
   #ifdef DEBUG_SERIAL
-    Serial.print(F("    Shortened string: "));
+    Serial.print(F("\tShort: "));
     Serial.println(shortenedString);
   #endif
   int iSpace = shortenedString.indexOf(" ");
   String readingString = shortenedString.substring(0, iSpace);
   readingString.trim();
   #ifdef DEBUG_SERIAL
-    Serial.print(F("    Reading string: "));
+    Serial.print(F("\tReading: "));
     Serial.println(readingString);
   #endif
   if (IsNumeric(readingString)) {
@@ -181,7 +175,7 @@ int GetIntegerSensorReading(char index, String sensorOutput, int invalidValue) {
   }
 
   #ifdef DEBUG_SERIAL
-    Serial.print(F("    Returning value: "));
+    Serial.print(F("\tValue: "));
     Serial.println(value);
   #endif
   

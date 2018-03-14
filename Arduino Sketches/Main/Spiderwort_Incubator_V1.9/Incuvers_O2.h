@@ -30,16 +30,16 @@ class IncuversO2System {
 
     void CheckJumpStatus() {
       #ifdef DEBUG_O2
-        Serial.println(F("Call to IncuversO2System::CheckJumpStatus()"));
+        Serial.println(F("O2::CheckJump"));
       #endif
 
       if (this->on) {
         if (this->tickTime >= this->shutO2At) {
           digitalWrite(pinAssignment_Valve, LOW);
           #ifdef DEBUG_O2
-            Serial.print(F("O2 shutdown: "));
+            Serial.print(F("O2 shut "));
             Serial.print((this->tickTime-this->shutO2At));
-            Serial.println(F("ms beyond checkpoint"));
+            Serial.println(F("ms late"));
           #endif
           this->on = false;
           this->actionpoint = this->tickTime;
@@ -49,7 +49,7 @@ class IncuversO2System {
 
     void GetO2Reading_Luminox() {
       #ifdef DEBUG_O2 
-          Serial.println(F("Call to GetO2Reading_Luminox()"));
+          Serial.println(F("O2Reading_Luminox"));
       #endif
     
       String luminoxString = "";
@@ -74,9 +74,8 @@ class IncuversO2System {
           i = 5; // escape the loop.
         } else {
           #ifdef DEBUG_O2
-            Serial.print(F("   Oh Oh Spaghettios!  The O2 sensor returned an invalid reading on attempt "));
-            Serial.print(i);
-            Serial.println(F(", trying again!"));
+            Serial.print(F("\tO2 sensor returned invalid reading attempt "));
+            Serial.println(i);
           #endif 
         }
       }
@@ -92,7 +91,7 @@ class IncuversO2System {
             digitalWrite(pinAssignment_Valve, LOW);
             actionpoint = tickTime;
             #ifdef DEBUG_O2
-              Serial.println(F("OOOOOOOO:O2 stepping mode activated."));
+              Serial.println(F("\tO2 step mode"));
             #endif
           } // there is no else, we need to wait for the bleedtime to expire.
         } else {
@@ -105,7 +104,7 @@ class IncuversO2System {
               if (startO2At + ALARM_CO2_OPEN_PERIOD < tickTime) {
                 //statusHolder.AlarmO2UnderSaturation = true;
                 #ifdef DEBUG_O2
-                  Serial.println(F("OOOOOOOO:O2 under-saturation alarm thrown."));
+                  Serial.println(F("\tO2 under-saturation alarm"));
                 #endif
               }
             }
@@ -113,14 +112,14 @@ class IncuversO2System {
             shutO2At = (tickTime + N_DELTA_JUMP);
             digitalWrite(pinAssignment_Valve, HIGH);
             #ifdef DEBUG_O2
-             Serial.print(F("OOOOOOOO:N opening from "));
+             Serial.print(F("\tN jump from "));
               Serial.print(tickTime);
-              Serial.print(F(" until "));
+              Serial.print(F(" to "));
               Serial.println(shutO2At);
             #endif
           } else {
            #ifdef DEBUG_O2
-             Serial.println(F("OOOOOOOO:O2 over-saturated but bleed time remaining."));
+             Serial.println(F("\tO2 over-saturated but bleeding"));
            #endif
           }
         }
@@ -132,7 +131,7 @@ class IncuversO2System {
           // Alarm
           //statusHolder.AlarmO2OverSaturation = true;
           #ifdef DEBUG_O2
-            Serial.println(F("OOOOOOOO:O2 over-saturation alarm thrown."));
+            Serial.println(F("\tO2 over-saturation alarm"));
           #endif
         }
       }
@@ -141,14 +140,15 @@ class IncuversO2System {
   public:
     void SetupO2(int rxPin, int txPin, int gasMode, int relayPin) {
       #ifdef DEBUG_O2
-        Serial.println(F("Call to IncuversO2System::SetupO2()"));
+        Serial.println(F("O2::Setup"));
       #endif
       
       if (gasMode == 0) {
         #ifdef DEBUG_CO2
-          Serial.println(F("O2 Disabled"));
+          Serial.println(F("Disabled"));
         #endif
         this->enabled = false;
+        level = -100;
       } else {
         this->enabled = true;
 
@@ -162,12 +162,12 @@ class IncuversO2System {
         this->MakeSafeState();
         
         #ifdef DEBUG_O2
-          Serial.println(F("O2 Enabled."));
-          Serial.print(F("  RxPin: "));
+          Serial.println(F("Enabled."));
+          Serial.print(F("\tRx: "));
           Serial.println(rxPin);
-          Serial.print(F("  TxPin: "));
+          Serial.print(F("\tTx: "));
           Serial.println(txPin);
-          Serial.print(F("  Relay Pin: "));
+          Serial.print(F("\tRelay: "));
           Serial.println(relayPin);
         #endif
       }

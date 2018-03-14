@@ -11,7 +11,6 @@
 #define OO_MAX 21.0
 #define OO_DLT 0.1
 
-
 String CentreStringForDisplay(String prn, int width) {
   String ret = "";
   int padding = ((width - prn.length())/2);
@@ -27,8 +26,12 @@ String CentreStringForDisplay(String prn, int width) {
   return ret;
 }
 
-char GetIndicator(boolean enabled, boolean stepping, boolean altSymbol) {
+char GetIndicator(boolean enabled, boolean stepping, boolean altSymbol, boolean altBlank) {
   char r = ' ';
+  
+  if (altBlank) { 
+    r = '-'; // For use in the serial output.
+  }
 
   if (enabled && !stepping) {
     if (altSymbol) {
@@ -90,8 +93,8 @@ class IncuversUI {
           if (incSet->getChamberTemperature() < 10.0) {
             lcd->print(" ");
           }
-          lcd->print(GetIndicator(incSet->isDoorOn(), incSet->isDoorStepping(), true));
-          lcd->print(GetIndicator(incSet->isChamberOn(), incSet->isChamberStepping(), false));
+          lcd->print(GetIndicator(incSet->isDoorOn(), incSet->isDoorStepping(), true, false));
+          lcd->print(GetIndicator(incSet->isChamberOn(), incSet->isChamberStepping(), false, false));
         } else if (incSet->getChamberTemperature() < -20){
           lcd->print(F("Error   "));
         } else {
@@ -102,13 +105,13 @@ class IncuversUI {
       if (incSet->getCO2Mode() > 0) {
         lcd->setCursor(0, rowI);
         lcd->print(" CO2: ");
-        if (incSet->getCO2Mode() > 0) {
+        if (incSet->getCO2Mode() > 0 && incSet->getCO2Level() >= 0) {
           lcd->print(incSet->getCO2Level(), 1);
           lcd->print("%    ");
           if (incSet->getCO2Level() < 10.0) {
             lcd->print(" ");
           }
-          lcd->print(GetIndicator(incSet->isCO2Open(), incSet->isCO2Stepping(), false)); 
+          lcd->print(GetIndicator(incSet->isCO2Open(), incSet->isCO2Stepping(), false, false)); 
         } else if (incSet->getCO2Level() < 0){
           lcd->print(F("Error   "));
         } else {
@@ -119,13 +122,13 @@ class IncuversUI {
       if (incSet->getO2Mode() > 0) {
         lcd->setCursor(0, rowI);
         lcd->print(" O2: ");
-        if (incSet->getO2Mode() > 0) {
+        if (incSet->getO2Mode() > 0 && incSet->getO2Level() >= 0) {
           lcd->print(incSet->getO2Level(), 1);
           lcd->print("%    ");
           if (incSet->getO2Level() < 10.0) {
             lcd->print(" ");
           }
-          lcd->print(GetIndicator(incSet->isO2Open(), incSet->isO2Stepping(), false)); 
+          lcd->print(GetIndicator(incSet->isO2Open(), incSet->isO2Stepping(), false, false)); 
         } else if (incSet->getO2Level() < 0){
           lcd->print(F("Error   "));
         } else {
@@ -142,12 +145,12 @@ class IncuversUI {
        */
       lcd->setCursor(0, 0);
       lcd->print("T.");
-      lcd->print(GetIndicator(incSet->isDoorOn(), incSet->isDoorStepping(), true));
-      lcd->print(GetIndicator(incSet->isChamberOn(), incSet->isChamberStepping(), false));
+      lcd->print(GetIndicator(incSet->isDoorOn(), incSet->isDoorStepping(), true, false));
+      lcd->print(GetIndicator(incSet->isChamberOn(), incSet->isChamberStepping(), false, false));
       lcd->print("  CO2");
-      lcd->print(GetIndicator(incSet->isCO2Open(), incSet->isCO2Stepping(), false)); 
+      lcd->print(GetIndicator(incSet->isCO2Open(), incSet->isCO2Stepping(), false, false)); 
       lcd->print("   O2");
-      lcd->print(GetIndicator(incSet->isO2Open(), incSet->isO2Stepping(), false)); 
+      lcd->print(GetIndicator(incSet->isO2Open(), incSet->isO2Stepping(), false, false)); 
       
       lcd->setCursor(0, 1);
       if (incSet->getChamberTemperature() > 60.0 || incSet->getChamberTemperature() < -20.0) {
@@ -184,168 +187,47 @@ class IncuversUI {
       int minutes = runningAmount % 60;
       runningAmount = floor(runningAmount / 60);
       int hours = runningAmount % 24;
-      runningAmount = floor(runningAmount / 24);
-      int days = runningAmount % 7;
-      int weeks = floor(runningAmount / 7);
+      int days = floor(runningAmount / 24);
       
-      String readable = String(PadToWidth(weeks, 2) + "W" + PadToWidth(weeks, 1) + "D" + PadToWidth(hours, 2)+ "H" + PadToWidth(minutes, 2) + "m" + PadToWidth(seconds, 2) + "." + PadToWidth(pureMillis, 4));
+      String readable = String(PadToWidth(days, 2) + "d" + PadToWidth(hours, 2)+ "H" + PadToWidth(minutes, 2) + "m" + PadToWidth(seconds, 2) + "." + PadToWidth(pureMillis, 4));
       return readable;
     }
-
+    
+    #ifdef DEBUG_MEMORY
+      int freeMemory() {
+        extern int __heap_start, *__brkval; 
+        int v; 
+        return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
+      }
+    #endif
+    
     void SerialPrintStatus() {
-      char* temp;
       Serial.print(ConvertMillisToReadable(millis()));
       Serial.print(F(" ID "));
       Serial.print(incSet->getSerial());
       Serial.print(F(" TC "));
-      sprintf(temp, "%04.2e", incSet->getChamberTemperature());
-      Serial.print(temp);
+      Serial.print(incSet->getChamberTemperature(), 2);
       Serial.print(F(" TD "));
-      sprintf(temp, "%04.2e", incSet->getDoorTemperature());
-      Serial.print(temp);
+      Serial.print(incSet->getDoorTemperature(), 2);
       Serial.print(F(" CO "));
-      sprintf(temp, "%04.2e", incSet->getCO2Level());
-      Serial.print(temp);
+      Serial.print(incSet->getCO2Level(), 2);
       Serial.print(F(" OO "));
-      sprintf(temp, "%04.2e", incSet->getO2Level());
-      Serial.print(temp);
+      Serial.print(incSet->getO2Level(), 2);
       Serial.print(F(" AP "));
-      Serial.print(GetIndicator(incSet->isDoorOn(), incSet->isDoorStepping(), false));
-      Serial.print(GetIndicator(incSet->isChamberOn(), incSet->isChamberStepping(), false));
-      Serial.print(GetIndicator(incSet->isCO2Open(), incSet->isCO2Stepping(), false));
-      Serial.print(GetIndicator(incSet->isO2Open(), incSet->isO2Stepping(), false));
+      Serial.print(GetIndicator(incSet->isDoorOn(), incSet->isDoorStepping(), false, true));
+      Serial.print(GetIndicator(incSet->isChamberOn(), incSet->isChamberStepping(), false, true));
+      Serial.print(GetIndicator(incSet->isCO2Open(), incSet->isCO2Stepping(), false, true));
+      Serial.print(GetIndicator(incSet->isO2Open(), incSet->isO2Stepping(), false, true));
       Serial.print(F(" OA "));
       Serial.print("");
       Serial.print("");
+      #ifdef DEBUG_MEMORY
+      Serial.print(F(" FM "));
+      Serial.print(freeMemory());
+      #endif
       Serial.println();
     }
     
-    // For debugging only
-    void SerialPrintResults() {
-      String blankString = F("");
-      String onString = F("on");
-      String yesString = F("yes");
-      String divString = F("|");
-      Serial.println(F("-----------------------------------------------"));
-      Serial.print(F("Time in operation "));
-      Serial.println(ConvertMillisToReadable(millis()));
-      // Header
-     /* Serial.print(CentreStringForDisplay(F(""),10));
-      Serial.print(divString);
-      Serial.print(CentreStringForDisplay(F("HEAT"),16));
-      Serial.print(divString);
-      Serial.print(CentreStringForDisplay(F("FAN"),16));
-      Serial.print(divString);
-      Serial.print(CentreStringForDisplay(F("CO2"),16));
-      Serial.print(divString);
-      Serial.println(CentreStringForDisplay(F("O2"),16));
-      // Enabled
-      Serial.print(CentreStringForDisplay(F("Enabled"),10));
-      Serial.print(divString);
-      if (incSet->getHeatMode() > 0) {
-        Serial.print(CentreStringForDisplay(yesString,16));
-      } else {
-        Serial.print(CentreStringForDisplay(blankString,16));
-      }
-      Serial.print(divString);
-      if (incSet->getFanMode() > 0) {
-        Serial.print(CentreStringForDisplay(yesString,16));
-      } else {
-        Serial.print(CentreStringForDisplay(blankString,16));
-      }
-      Serial.print(divString);
-      if (incSet->getCO2Mode() > 0) {
-        Serial.print(CentreStringForDisplay(yesString,16));
-      } else {
-        Serial.print(CentreStringForDisplay(blankString,16));
-      }
-      Serial.print(divString);
-      if (incSet->getO2Mode() > 0) {
-        Serial.println(CentreStringForDisplay(yesString,16));
-      } else {
-        Serial.println(CentreStringForDisplay(blankString,16));
-      }
-     /* // setpoints
-      Serial.print(CentreStringForDisplay(F("SetPoint"),10));
-      Serial.print(divString);
-      if (incSet->getHeatMode() > 0) {
-        Serial.print(incSet->getTemperatureSetPoint());
-      } else {
-        Serial.print(CentreStringForDisplay(blankString,16));
-      }
-      Serial.print(divString);
-      if (incSet->getFanMode() > 0) {
-        Serial.print(CentreStringForDisplay(blankString,16));
-      } else {
-        Serial.print(CentreStringForDisplay(blankString,16));
-      }
-      Serial.print(divString);
-      if (incSet->getCO2Mode() > 0) {
-        Serial.print(incSet->getCO2SetPoint());
-      } else {
-        Serial.print(CentreStringForDisplay(blankString,16));
-      }
-      Serial.print(divString);
-      if (incSet->getO2Mode() > 0) {
-        Serial.println(incSet->getO2SetPoint());
-      } else {
-        Serial.println(CentreStringForDisplay(blankString,16));
-      }
-      // Readings
-      Serial.print(CentreStringForDisplay(F("Readings"),10));
-      Serial.print(divString);
-      if (incSet->getHeatMode() > 0) {
-        Serial.print(CentreStringForDisplay(String(incSet->getChamberTemperature()),16));
-      } else {
-        Serial.print(CentreStringForDisplay(blankString,16));
-      }
-      Serial.print(divString);
-      if (incSet->getFanMode() > 0) {
-        Serial.print(CentreStringForDisplay(blankString,16));
-      } else {
-        Serial.print(CentreStringForDisplay(blankString,16));
-      }
-      Serial.print(divString);
-      if (incSet->getCO2Mode() > 0) {
-        Serial.print(CentreStringForDisplay(String(incSet->getCO2Level()),16));
-      } else {
-        Serial.print(CentreStringForDisplay(blankString,16));
-      }
-      Serial.print(divString);
-      if (incSet->getO2Mode() > 0) {
-        Serial.println(CentreStringForDisplay(String(incSet->getO2Level()),16));
-      } else {
-        Serial.println(CentreStringForDisplay(blankString,16));
-      }
-      // Working
-      Serial.print(CentreStringForDisplay(F("Working"),10));
-      Serial.print(divString);
-      if (incSet->getHeatMode() > 0) {
-        Serial.print(CentreStringForDisplay(String(GetIndicator(incSet->isDoorOn(), incSet->isDoorStepping(), false)+GetIndicator(incSet->isChamberOn(), incSet->isChamberStepping(), true)),16));
-      } else {
-        Serial.print(CentreStringForDisplay(blankString,16));
-      }
-      Serial.print(divString);
-      if (incSet->getFanMode() > 0) {
-        Serial.print(CentreStringForDisplay(blankString,16));
-      } else {
-        Serial.print(CentreStringForDisplay(blankString,16));
-      }
-      Serial.print(divString);
-      if (incSet->getCO2Mode() > 0) {
-        Serial.print(CentreStringForDisplay(String(GetIndicator(incSet->isCO2Open(), incSet->isCO2Stepping(), false)),16));
-      } else {
-        Serial.print(CentreStringForDisplay(blankString,16));
-      }
-      Serial.print(divString);
-      if (incSet->getO2Mode() > 0) {
-        Serial.println(CentreStringForDisplay(String(GetIndicator(incSet->isO2Open(), incSet->isO2Stepping(), false)),16));
-      } else {
-        Serial.println(CentreStringForDisplay(blankString,16));
-      }
-    */
-      Serial.println("");
-    }
     void AlarmOrchestrator() {
     /*  if (statusHolder.AlarmTempSensorMalfunction == true) {
         // There's not much we can do for this one but turn off/disable the heating system.
@@ -682,32 +564,32 @@ class IncuversUI {
         switch (screenId) {
           case 1 :
             if (redraw) {
-              DrawVariableMenuPage(F("Temperature:"), incSet->getTemperatureSetPoint());
+              DrawVariableMenuPage(F("Temperature"), incSet->getTemperatureSetPoint());
               redraw = false;
             } else if (userInput == 1 || userInput == 2) {
               if (userInput == 1) { AdjustTempSetting(true); } else { AdjustTempSetting(false); }
               redraw = true;
-              delay(MENU_UI_POST_DELAY);
+              delay(MENU_UI_POST_DELAY*2);
             }
             break;
           case 2 :
             if (redraw) {
-              DrawVariableMenuPage(F("CO2:"), incSet->getCO2SetPoint());
+              DrawVariableMenuPage(F("CO2 %"), incSet->getCO2SetPoint());
               redraw = false;
             } else if (userInput == 1 || userInput == 2) {
               if (userInput == 1) { AdjustCO2Setting(true); } else { AdjustCO2Setting(false); }
               redraw = true;
-              delay(MENU_UI_POST_DELAY);
+              delay(MENU_UI_POST_DELAY*2);
             }
             break;
           case 3 :
             if (redraw) {
-              DrawVariableMenuPage(F("O2:"), incSet->getO2SetPoint());
+              DrawVariableMenuPage(F("O2 %"), incSet->getO2SetPoint());
               redraw = false;
             } else if (userInput == 1 || userInput == 2) {
               if (userInput == 1) { AdjustO2Setting(true); } else { AdjustO2Setting(false); }
               redraw = true;
-              delay(MENU_UI_POST_DELAY);
+              delay(MENU_UI_POST_DELAY*2);
             }
             break;
           }
@@ -729,6 +611,30 @@ class IncuversUI {
             // exit
             doLoop=false;
             break;
+        }
+      }
+    }
+    
+    void ShowInfo() {
+      boolean doLoop = true;
+      boolean redraw = true;
+      int userInput;
+    
+      while (doLoop) {
+        if (redraw) {
+          lcd->clear();
+          lcd->setCursor(0, 0);
+          lcd->print(F("Hrd Rev: "));
+          lcd->print(incSet->getHardware());
+          lcd->setCursor(0, 1);
+          lcd->print(F("SN: "));
+          lcd->print(incSet->getSerial());
+          redraw = false;
+        }
+        userInput = GetButtonState();
+        
+        if (userInput != 0) {
+            doLoop=false;
         }
       }
     }
@@ -864,7 +770,7 @@ class IncuversUI {
             if (redraw) {
               DrawMainMenuPage("Information", "", true, "", "");
             } else if (userInput == 1) {
-              //doTempSensorAssign();
+              ShowInfo();
               delay(MENU_UI_POST_DELAY);
               redraw = true;
               userInput = 0;
@@ -990,6 +896,11 @@ class IncuversUI {
         longDebugDesc += F("Temperature, ");
         shortDebugDesc += "T";
       #endif
+
+      #ifdef DEBUG_MEMORY
+        longDebugDesc += F("Memory, ");
+        shortDebugDesc += "M";
+      #endif
       
       if (longDebugDesc.length() > 0) {
         Serial.println(F("Debug build: "));
@@ -1049,12 +960,7 @@ class IncuversUI {
         EnterSetupMode();  
       }
    
-      #ifdef DEBUG_GENERAL
-        SerialPrintResults();
-      #endif
-      #ifndef DEBUG_GENERAL
-        SerialPrintStatus();
-      #endif
+      SerialPrintStatus();
     }
     
 };
