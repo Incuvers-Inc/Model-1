@@ -8,7 +8,7 @@ struct HardwareStruct {
   byte ident[3];
   // Identification
   byte hVer[3];
-  byte serial;
+  int serial;
   // Temp settings
   byte countOfTempSensors;
   byte sensorAddrDoorTemp[8];
@@ -78,30 +78,28 @@ void setup() {
   hardwareDefinition.hVer[1]=9;
   hardwareDefinition.hVer[2]=3;
   // Hardware serial number
-  hardwareDefinition.serial=6;
-  // Count of temp sensors
-  hardwareDefinition.countOfTempSensors=2;    // count of temperature sensors installed
+  hardwareDefinition.serial=9999;             // Serial number as printed inside the top cover
+  // Temperature sensors
+  hardwareDefinition.countOfTempSensors=2;    // Count of temperature sensors installed
   for (int i = 0; i <8; i++) {
     hardwareDefinition.sensorAddrDoorTemp[i] = 0;
     hardwareDefinition.sensorAddrChamberTemp[i] = 0;
   }
   // CO2 sensor
-  hardwareDefinition.hasCO2Sensor=false;      // is there a CO2 sensor present?
+  hardwareDefinition.hasCO2Sensor=true;       // Is there a CO2 sensor present?
   hardwareDefinition.CO2RxPin=2;              // Default: 2
   hardwareDefinition.CO2TxPin=3;              // Default: 3
   // Oxygen sensor
-  hardwareDefinition.hasO2Sensor=false;       // is there an O2 sensor present?
-  hardwareDefinition.O2RxPin=10;              // 10 = default with no ethernet shield
-  hardwareDefinition.O2TxPin=9;               // 9 = unconnected pin on atmega chip
-  // Enabled components
-  hardwareDefinition.secondGasBidirectional=false;  // is there a second pin for the second gas sensor
+  hardwareDefinition.hasO2Sensor=false;       // Is there an O2 sensor present?
+  hardwareDefinition.O2RxPin=0;               // 
+  hardwareDefinition.O2TxPin=0;               // 
   // Gas Relay
-  hardwareDefinition.gasRelayPin = 7;
-  hardwareDefinition.secondGasRelay=false;          // is there a pin for a second gas relay
-  hardwareDefinition.gasRelayTwoPin = 0;
+  hardwareDefinition.gasRelayPin = 7;         // Default: 7
+  hardwareDefinition.secondGasRelay=false;    // Is there a pin for a second gas valve/relay present?
+  hardwareDefinition.gasRelayTwoPin = 0;      // 
   // Ethernet
-  hardwareDefinition.ethernetSupport=false;         // is there an ethernet shield installed?
-  hardwareDefinition.ethernetPin = 0;
+  hardwareDefinition.ethernetSupport=false;   // Is there an ethernet shield installed?
+  hardwareDefinition.ethernetPin = 0;         // Default: 10 (when an O2 sensor is not installed)
 }
 
 void loop() {

@@ -16,7 +16,7 @@ struct HardwareStruct {
   byte ident[3];
   // Identification
   byte hVer[3];
-  byte serial;
+  int serial;
   // Temp settings
   byte countOfTempSensors;
   byte sensorAddrDoorTemp[8];
