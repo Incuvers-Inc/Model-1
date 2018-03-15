@@ -109,7 +109,7 @@ class IncuversHeatingSystem {
 
     void CheckHeatMaintenance() {
       // Chamber Temperature
-      if (tempChamber < setPoint) {
+      if (tempChamber < setPoint && tempChamber > -40) {
         if (tempChamber > (setPoint * TEMPERATURE_STEP_THRESH)) {
           // stepping heat
           if (heatOn_Chamber) {
@@ -161,7 +161,7 @@ class IncuversHeatingSystem {
       }
   
       // Door Temperature
-      if (tempDoor < setPoint) {
+      if (tempDoor < setPoint && tempDoor > -40) {
         if (tempDoor > (setPoint * TEMPERATURE_STEP_THRESH)) {
           // stepping heat
           if (heatOn_Door) {
@@ -217,6 +217,28 @@ class IncuversHeatingSystem {
     void SetupHeating(int doorPin, int chamberPin, int oneWirePin, byte doorSensorID[8], byte chamberSensorID[8], int heatMode, int fanPin, int fanMode) {
       #ifdef DEBUG_TEMP
         Serial.println(F("Heat::Setup"));
+        Serial.println(doorPin);
+        Serial.println(chamberPin);
+        Serial.println(oneWirePin);
+        Serial.print(doorSensorID[0]);
+        Serial.print(doorSensorID[1]);
+        Serial.print(doorSensorID[2]);
+        Serial.print(doorSensorID[3]);
+        Serial.print(doorSensorID[4]);
+        Serial.print(doorSensorID[5]);
+        Serial.print(doorSensorID[6]);
+        Serial.println(doorSensorID[7]);
+        Serial.print(chamberSensorID[0]);
+        Serial.print(chamberSensorID[1]);
+        Serial.print(chamberSensorID[2]);
+        Serial.print(chamberSensorID[3]);
+        Serial.print(chamberSensorID[4]);
+        Serial.print(chamberSensorID[5]);
+        Serial.print(chamberSensorID[6]);
+        Serial.println(chamberSensorID[7]);
+        Serial.println(heatMode);
+        Serial.println(fanPin);
+        Serial.println(fanMode);
       #endif
       
       // Setup heaters 

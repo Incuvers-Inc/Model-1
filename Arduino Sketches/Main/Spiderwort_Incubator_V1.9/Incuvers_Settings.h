@@ -31,11 +31,12 @@ struct HardwareStruct {
   byte O2TxPin;
   // Gas Relay
   byte gasRelayPin;
+  bool secondGasRelay;
+  byte gasRelayTwoPin;
   // Ethernet
   bool ethernetSupport;
   byte ethernetPin;
 };
-
 struct SettingsStruct_Curr {
   byte ident;
   // Fan settings
@@ -117,7 +118,6 @@ class IncuversSettingsHandler {
         Serial.println(F("HardwareSet"));
       #endif
       int headerCheck;
-      HardwareStruct hardwareData;
       
       headerCheck = VerifyEEPROMHeader(HARDWARE_ADDRS, true);
     
@@ -130,19 +130,59 @@ class IncuversSettingsHandler {
       } else {
         #ifdef DEBUG_EEPROM
           Serial.print(F("  The hardwareData ident matched, loading "));
-          Serial.print(sizeof(hardwareData));
+          Serial.print(sizeof(settingsHardware));
           Serial.println(F(" bytes of hardware definitions."));
         #endif
         
-        for (int i = 0; i < sizeof(hardwareData); i++) {
-          *((char*)&hardwareData + i) = EEPROM.read(HARDWARE_ADDRS + i);    
+        for (int i = 0; i < sizeof(settingsHardware); i++) {
+          *((char*)&settingsHardware + i) = EEPROM.read(HARDWARE_ADDRS + i);    
         }
+        #ifdef DEBUG_EEPROM
+        Serial.print(settingsHardware.ident[0]);
+        Serial.print(settingsHardware.ident[1]);
+        Serial.println(settingsHardware.ident[2]);
+        // Identification
+        Serial.print(settingsHardware.hVer[0]);
+        Serial.print(settingsHardware.hVer[1]);
+        Serial.println(settingsHardware.hVer[2]);
+        Serial.println(settingsHardware.serial);
+        // Temp settings
+        Serial.println(settingsHardware.countOfTempSensors);
+        Serial.print(settingsHardware.sensorAddrDoorTemp[0]);
+        Serial.print(settingsHardware.sensorAddrDoorTemp[1]);
+        Serial.print(settingsHardware.sensorAddrDoorTemp[2]);
+        Serial.print(settingsHardware.sensorAddrDoorTemp[3]);
+        Serial.print(settingsHardware.sensorAddrDoorTemp[4]);
+        Serial.print(settingsHardware.sensorAddrDoorTemp[5]);
+        Serial.print(settingsHardware.sensorAddrDoorTemp[6]);
+        Serial.println(settingsHardware.sensorAddrDoorTemp[7]);
+        Serial.print(settingsHardware.sensorAddrChamberTemp[0]);
+        Serial.print(settingsHardware.sensorAddrChamberTemp[1]);
+        Serial.print(settingsHardware.sensorAddrChamberTemp[2]);
+        Serial.print(settingsHardware.sensorAddrChamberTemp[3]);
+        Serial.print(settingsHardware.sensorAddrChamberTemp[4]);
+        Serial.print(settingsHardware.sensorAddrChamberTemp[5]);
+        Serial.print(settingsHardware.sensorAddrChamberTemp[6]);
+        Serial.println(settingsHardware.sensorAddrChamberTemp[7]);
+        // CO2 settings
+        Serial.println(settingsHardware.hasCO2Sensor);
+        Serial.println(settingsHardware.CO2RxPin);
+        Serial.println(settingsHardware.CO2TxPin);
+        // O2 settings
+        Serial.println(settingsHardware.hasO2Sensor);
+        Serial.println(settingsHardware.O2RxPin);
+        Serial.println(settingsHardware.O2TxPin);
+        // Gas Relay
+        Serial.println(settingsHardware.gasRelayPin);
+        Serial.println(settingsHardware.secondGasRelay);
+        Serial.println(settingsHardware.gasRelayTwoPin);
+        // Ethernet
+        Serial.println(settingsHardware.ethernetSupport);
+        Serial.println(settingsHardware.ethernetPin);
+        Serial.println(F("/RdHrdwrSet"));
+        #endif
         return true;
       }
-    
-      #ifdef DEBUG_EEPROM
-        Serial.println(F("/HardwareSet"));
-      #endif
     }
 
     int ReadCurrentSettings() {
@@ -159,9 +199,18 @@ class IncuversSettingsHandler {
       for (unsigned int i = 0; i < sizeof(this->settingsHolder); i++) {
         *((char*)&this->settingsHolder + i) = EEPROM.read(SETTINGS_ADDRS + i);    
       }
-    
+ 
       #ifdef DEBUG_EEPROM
-        Serial.println(F("/ReadSettings"));
+        Serial.println(settingsHolder.ident);
+        Serial.println(settingsHolder.fanMode);
+        Serial.println(settingsHolder.heatMode);
+        Serial.println(settingsHolder.heatSetPoint);
+        Serial.println(settingsHolder.CO2Mode);
+        Serial.println(settingsHolder.CO2SetPoint);
+        Serial.println(settingsHolder.O2Mode);
+        Serial.println(settingsHolder.O2SetPoint);
+        Serial.println(settingsHolder.alarmMode);
+        
       #endif
       return 1;
     }

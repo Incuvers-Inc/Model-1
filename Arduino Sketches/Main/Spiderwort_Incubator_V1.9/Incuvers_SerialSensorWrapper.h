@@ -13,10 +13,16 @@ class IncuversSerialSensor {
     }
 
     void StartSensor() {
+      #ifdef DEBUG_SERIAL
+          Serial.print(F("Starting"));
+      #endif
       this->ss->begin(9600);
     }
 
     void StartListening() {
+      #ifdef DEBUG_SERIAL
+          Serial.print(F("Listening"));
+      #endif
       this->ss->listen();
     }
 

@@ -124,7 +124,7 @@ class IncuversUI {
       }
       if (incSet->getO2Mode() > 0) {
         lcd->setCursor(0, rowI);
-        lcd->print(" O2: ");
+        lcd->print("  O2: ");
         if (incSet->getO2Mode() > 0 && incSet->getO2Level() >= 0) {
           lcd->print(incSet->getO2Level(), 1);
           lcd->print("%    ");
@@ -761,34 +761,33 @@ class IncuversUI {
         if (!redraw) {
           delay(MENU_UI_POST_DELAY);
           userInput = GetButtonState();
+          switch (userInput) {
+            case 0:
+              delay(MENU_UI_LOAD_DELAY);
+              redraw=false;
+              break;
+            case 1:
+              // Will skip this now and get it on the next loop.
+              break;
+            case 2:
+              // Next
+              screen++;
+              lcd->clear();
+              delay(MENU_UI_LOAD_DELAY);
+              redraw = true;
+              break;
+            case 3:
+              // exit
+              lcd->clear();
+              lcd->setCursor(0, 0);
+              lcd->print(F("Exiting setup..."));
+              DisplayLoadingBar();
+              incSet->CheckSettings();
+              doLoop=false;
+              lcd->clear();
+              break;
+          }
         }
-        
-        switch (userInput) {
-          case 0:
-            delay(MENU_UI_LOAD_DELAY);
-            redraw=false;
-            break;
-          case 1:
-            // Will skip this now and get it on the next loop.
-            break;
-          case 2:
-            // Next
-            screen++;
-            lcd->clear();
-            delay(MENU_UI_LOAD_DELAY);
-            redraw = true;
-            break;
-          case 3:
-            // exit
-            lcd->clear();
-            lcd->setCursor(0, 0);
-            lcd->print(F("Exiting setup..."));
-            DisplayLoadingBar();
-            incSet->CheckSettings();
-            doLoop=false;
-            lcd->clear();
-            break;
-        } 
       }
     }
     

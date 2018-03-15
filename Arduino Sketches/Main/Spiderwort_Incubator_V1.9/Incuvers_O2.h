@@ -84,7 +84,7 @@ class IncuversO2System {
     }
     
     void CheckO2Maintenance() {
-      if (level > setPoint ) {
+      if (level > setPoint  && level >= 0) {
         if (level < (setPoint * OO_STEP_THRESH)) {
           if (tickTime > actionpoint + N_BLEEDTIME_STEPPING) {
             // In stepping mode and not worried about bleed delay.
@@ -218,6 +218,7 @@ class IncuversO2System {
       if (mode == 0) {
         MakeSafeState();
         this->enabled = false;
+        level = -100;
       } else {
         this->enabled = true;
         this->iSS->StartSensor();

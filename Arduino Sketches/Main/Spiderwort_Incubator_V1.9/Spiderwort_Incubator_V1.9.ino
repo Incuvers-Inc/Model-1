@@ -129,12 +129,20 @@ void loop() {
   }
   
   // Give all the modules a chance to do some work
-  iHeat->DoTick();
-  iCO2->DoTick();
-  iO2->DoMiniTick();
-  iHeat->DoTick();
-  iO2->DoTick();
-  iCO2->DoMiniTick();
-  iUI->DoTick(); 
+  if (iSettings->getPersonalityCount() == 3) {
+    iHeat->DoTick();
+    iCO2->DoTick();
+    iO2->DoMiniTick();
+    iUI->DoTick(); 
+    iHeat->DoTick();
+    iO2->DoTick();
+    iCO2->DoMiniTick();
+    iUI->DoTick(); 
+  } else {
+    iHeat->DoTick();
+    iCO2->DoTick();
+    iO2->DoTick();
+    iUI->DoTick(); 
+  }
 }
 

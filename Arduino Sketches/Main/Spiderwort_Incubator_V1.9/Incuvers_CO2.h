@@ -86,7 +86,7 @@ class IncuversCO2System {
       #ifdef DEBUG_CO2 
         Serial.print(F("CO2Maintenance()"));
       #endif
-      if (level < setPoint ) {
+      if (level < setPoint && level >= 0) {
         if (level > (setPoint * CO2_STEP_THRESH)) {
           if (this->tickTime > actionpoint + CO2_BLEEDTIME_STEPPING) {
             // In stepping mode and not worried about bleed delay.
@@ -222,6 +222,7 @@ class IncuversCO2System {
       if (mode == 0) {
         MakeSafeState();
         this->enabled = false;
+        level = -100;
       } else {
         this->enabled = true;
         this->iSS->StartSensor();
