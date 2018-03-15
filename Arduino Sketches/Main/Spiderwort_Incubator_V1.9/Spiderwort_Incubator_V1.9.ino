@@ -12,11 +12,12 @@
 
  /* Changelog
   * 
-  * 1.9 - Added support for inate hardware settings.
+  * 1.9 - Moved key configuration elements to hardware-specific settings store.
   *     - Rewrote the serial sensor monitoring systems.
   *     - Subdivided code into several files in order to aid in maintenance.
   *     - Added selectable fan modes
   *     - improved the DEBUG options for smaller compiled results in production environments.
+  *     - removed ability to import settings
   *     
   * 1.8 - Addition of support for Digital O2 sensors.
   *
@@ -35,9 +36,7 @@
   */
 
 // Timing definitions
-#define MENU_UI_LOAD_DELAY 75
-#define MENU_UI_POST_DELAY 250
-#define MENU_UI_REDRAW_DELAY 500
+// Due to the long overflow and millis() reset, which would cause issues for our timing, we elect to reboot the incubator after one month of uptime.
 #define RESET_AFTER_DELTA 2678400000
 
 // Debugging definitions, remove definition to disable.  Supported debugging variants: DEBUG_GENERAL, DEBUG_SERIAL, DEBUG_EEPROM, DEBUG_UI, DEBUG_CO2, DEBUG_O2, DEBUG_TEMP, DEBUG_MEMORY
@@ -50,30 +49,11 @@
 //define DEBUG_TEMP true
 #define DEBUG_MEMORY true
 
-// Pin assignment constants (note these are for the default 0.9.3 build and may be overridden by the hardware settings.)
-#define PINASSIGN_CO2SENSOR_RX 2
-#define PINASSIGN_CO2SENSOR_TX 3
+// Hardwired settings
 #define PINASSIGN_ONEWIRE_BUS 4
 #define PINASSIGN_HEATCHAMBER 5
 #define PINASSIGN_FAN 6
 #define PINASSIGN_HEATDOOR 8
-#define PINASSIGN_O2SENSOR_RX 10
-#define PINASSIGN_O2SENSOR_TX 12 // I'm not sure if this pin exists in our implementation, but we'll try it like this as we aren't trying to control the sensor
-#define PINASSIGN_CO2RELAY 7
-#define PINASSIGN_NRELAY 7
-/*  ATMEGA328 Pins In Use:
- *    D2 - Rx for CO2 sensor
- *    D3 - Tx for CO2 sensor
- *    D4 - DS18B20 temperature sensors
- *    D5 - Chamber Heater relay
- *    D6 - Fan relay
- *    D7 - CO2 Solenoid relay
- *    D8 - Door Heater relay
- *    D9 - Unused
- *    D10 - Ethernet 
- *    A4 - SDA (I2C) - Comms with MCP23017 I/O port expander  
- *    A5 - SCL (I2C) - Comms with MCP23017 I/O port expander 
- */
 
 // Includes
 // OneWire and DallasTemperature libraries used for reading the heat sensors
@@ -84,10 +64,10 @@
 // Wire and LiquidTWI2 libraries used for the LCD display and button interface
 #include "Wire.h"
 #include "LiquidTWI2.h"
-// EEPROM library used for storing settings between sessions
+// EEPROM library used for accessing settings
 #include <EEPROM.h>  
 
-// Incuvers-related includes
+// Incuvers modules 
 #include "Incuvers_SerialSensorWrapper.h"
 #include "Incuvers_Heat.h"
 #include "Incuvers_CO2.h"
@@ -102,8 +82,7 @@ IncuversCO2System* iCO2;
 IncuversO2System* iO2;
 IncuversUI* iUI;
 
-void setup()
-{
+void setup() {
   // Start serial port
   Serial.begin(9600);
 
@@ -113,36 +92,33 @@ void setup()
   
   iSettings = new IncuversSettingsHandler();
   int runMode = 0; // 0 = uninitialized
-                   // 1 = customized
-                   // 2 = defaults
-                   // 3 = badConfig
-                   // 4 = Updating
+                   // 1 = saved settings
+                   // 2 = default settings
   runMode = iSettings->PerformLoadSettings();
   iSettings->CheckSettings();
 
+  if (runMode == 0) {
+    iUI->WarnOfMissingHardwareSettings();
+  }
+
   iHeat = new IncuversHeatingSystem();
   iSettings->AttachIncuversModule(iHeat);
-  iHeat->MakeSafeState();
 
   iCO2 = new IncuversCO2System();
   iSettings->AttachIncuversModule(iCO2);
-  iCO2->MakeSafeState();
   
   iO2 = new IncuversO2System();
   iSettings->AttachIncuversModule(iO2);
-  iO2->MakeSafeState();
 
   iUI->AttachSettings(iSettings);
   iUI->DisplayRunMode(runMode); 
-  if (runMode == 2 || runMode == 3 || runMode == 4 || runMode == 0) {
+  if (runMode == 2) {
     // Don't have the info we need, load default settings and go into setup
     iUI->EnterSetupMode();
   }
-
 }
 
-void loop()
-{
+void loop() {
   unsigned long nowTime = millis();
 
   if (nowTime > RESET_AFTER_DELTA) {
@@ -155,9 +131,10 @@ void loop()
   // Give all the modules a chance to do some work
   iHeat->DoTick();
   iCO2->DoTick();
+  iO2->DoMiniTick();
+  iHeat->DoTick();
   iO2->DoTick();
-  
+  iCO2->DoMiniTick();
   iUI->DoTick(); 
-  
 }
 

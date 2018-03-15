@@ -22,6 +22,8 @@ class IncuversO2System {
     boolean on;
     boolean stepping;
     boolean started;
+    boolean alarmOver;
+    boolean alarmUnder;
     
     float level;
     float setPoint;
@@ -102,9 +104,9 @@ class IncuversO2System {
               startO2At = tickTime;
             } else {
               if (startO2At + ALARM_CO2_OPEN_PERIOD < tickTime) {
-                //statusHolder.AlarmO2UnderSaturation = true;
+                alarmOver = true;
                 #ifdef DEBUG_O2
-                  Serial.println(F("\tO2 under-saturation alarm"));
+                  Serial.println(F("\tO2 over-saturation alarm"));
                 #endif
               }
             }
@@ -129,50 +131,41 @@ class IncuversO2System {
         started = false;
         if (level > (setPoint * (1.0 - ALARM_THRESH))) {
           // Alarm
-          //statusHolder.AlarmO2OverSaturation = true;
+          alarmUnder = true;
           #ifdef DEBUG_O2
-            Serial.println(F("\tO2 over-saturation alarm"));
+            Serial.println(F("\tO2 under-saturation alarm"));
           #endif
         }
       }
     }
 
   public:
-    void SetupO2(int rxPin, int txPin, int gasMode, int relayPin) {
+    void SetupO2(int rxPin, int txPin, int relayPin) {
       #ifdef DEBUG_O2
         Serial.println(F("O2::Setup"));
       #endif
       
-      if (gasMode == 0) {
-        #ifdef DEBUG_CO2
-          Serial.println(F("Disabled"));
-        #endif
-        this->enabled = false;
-        level = -100;
-      } else {
-        this->enabled = true;
-
-        // Setup Serial Interface
-        this->iSS = new IncuversSerialSensor();
-        this->iSS->Initialize(rxPin, txPin, true); 
-        
-        //Setup the gas system
-        this->pinAssignment_Valve = relayPin;
-        pinMode(this->pinAssignment_Valve, OUTPUT);  
-        this->MakeSafeState();
-        
-        #ifdef DEBUG_O2
-          Serial.println(F("Enabled."));
-          Serial.print(F("\tRx: "));
-          Serial.println(rxPin);
-          Serial.print(F("\tTx: "));
-          Serial.println(txPin);
-          Serial.print(F("\tRelay: "));
-          Serial.println(relayPin);
-        #endif
-      }
-  
-      this->mode = gasMode;
+      this->enabled = false;
+      level = -100;
+      // Setup Serial Interface
+      this->iSS = new IncuversSerialSensor();
+      this->iSS->Initialize(rxPin, txPin, true); 
+      
+      //Setup the gas system
+      this->pinAssignment_Valve = relayPin;
+      pinMode(this->pinAssignment_Valve, OUTPUT);  
+      
+      #ifdef DEBUG_O2
+        Serial.println(F("Enabled."));
+        Serial.print(F("\tRx: "));
+        Serial.println(rxPin);
+        Serial.print(F("\tTx: "));
+        Serial.println(txPin);
+        Serial.print(F("\tRelay: "));
+        Serial.println(relayPin);
+      #endif
+    
+      this->MakeSafeState();
     }
 
     void SetSetPoint(float tempSetPoint) {
@@ -187,15 +180,24 @@ class IncuversO2System {
       this->started = false;
     }
 
+    void DoMiniTick() {
+      if (this->enabled) {
+        this->iSS->StartListening();
+      }
+    }
+
     void DoTick() {
       if (this->enabled) {
         this->tickTime = millis();
       
-        if (!this->stepping) {
+        if (mode == 2 && !this->stepping) {
           this->CheckJumpStatus();  
         }
 
         this->GetO2Reading_Luminox();
+        if (mode == 2) {
+          this->CheckO2Maintenance();
+        }
       }
     }
 
@@ -212,7 +214,26 @@ class IncuversO2System {
     }
 
     void UpdateMode(int mode) {
-      this->enabled = false;
+      this->mode = mode;
+      if (mode == 0) {
+        MakeSafeState();
+        this->enabled = false;
+      } else {
+        this->enabled = true;
+        this->iSS->StartSensor();
+      }
     }
 
+    boolean isAlarmed() {
+      if (alarmOver || alarmUnder) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    void ResetAlarms() {
+      alarmOver = false;
+      alarmUnder = false;
+    }
 };

@@ -1,4 +1,6 @@
-#define HARDWARE_IDENT "IM1"
+// Hardware tag to ensure incorrect data is not read.
+// M1a = Model 1, release a
+#define HARDWARE_IDENT "M1a"
 #define HARDWARE_ADDRS 4 
 
 // Structure
@@ -7,21 +9,25 @@ struct HardwareStruct {
   // Identification
   byte hVer[3];
   byte serial;
-  // Pin settings
-  byte relayOnePin;
-  byte relayTwoPin;
-  byte sensorOneRxPin;
-  byte sensorOneTxPin;
-  byte sensorTwoRxPin;
-  byte sensorTwoTxPin;
-  // Installed Components
+  // Temp settings
   byte countOfTempSensors;
-  bool secondGasSensor;
-  bool secondGasRelay;
-  bool secondGasBidirectional;
-  bool ethernetSupport;
   byte sensorAddrDoorTemp[8];
   byte sensorAddrChamberTemp[8];
+  // CO2 settings
+  bool hasCO2Sensor;
+  byte CO2RxPin;
+  byte CO2TxPin;
+  // O2 settings
+  bool hasO2Sensor;
+  byte O2RxPin;
+  byte O2TxPin;
+  // Gas Relay
+  byte gasRelayPin;
+  bool secondGasRelay;
+  byte gasRelayTwoPin;
+  // Ethernet
+  bool ethernetSupport;
+  byte ethernetPin;
 };
 
 #include "OneWire.h"
@@ -72,23 +78,30 @@ void setup() {
   hardwareDefinition.hVer[1]=9;
   hardwareDefinition.hVer[2]=3;
   // Hardware serial number
-  hardwareDefinition.serial=42;
-  // Pin settings 0-79 = digital pins, 80-86 = analog pins 0-6
-  hardwareDefinition.relayOnePin=7;                 // Default: 7
-  hardwareDefinition.relayTwoPin=9;                 // 9 = unconnected pin on atmega chip
-  hardwareDefinition.sensorOneRxPin=2;              // Default: 2
-  hardwareDefinition.sensorOneTxPin=3;              // Default: 3
-  hardwareDefinition.sensorTwoRxPin=10;             // 10 = default with no ethernet shield
-  hardwareDefinition.sensorTwoTxPin=80;             // A0 = unconnected pin on atmega chip
+  hardwareDefinition.serial=6;
   // Count of temp sensors
-  hardwareDefinition.countOfTempSensors=2;          // count of temperature sensors installed
+  hardwareDefinition.countOfTempSensors=2;    // count of temperature sensors installed
+  for (int i = 0; i <8; i++) {
+    hardwareDefinition.sensorAddrDoorTemp[i] = 0;
+    hardwareDefinition.sensorAddrChamberTemp[i] = 0;
+  }
+  // CO2 sensor
+  hardwareDefinition.hasCO2Sensor=false;      // is there a CO2 sensor present?
+  hardwareDefinition.CO2RxPin=2;              // Default: 2
+  hardwareDefinition.CO2TxPin=3;              // Default: 3
+  // Oxygen sensor
+  hardwareDefinition.hasO2Sensor=false;       // is there an O2 sensor present?
+  hardwareDefinition.O2RxPin=10;              // 10 = default with no ethernet shield
+  hardwareDefinition.O2TxPin=9;               // 9 = unconnected pin on atmega chip
   // Enabled components
-  hardwareDefinition.secondGasSensor=true;          // is there a pin for a second gas sensor
   hardwareDefinition.secondGasBidirectional=false;  // is there a second pin for the second gas sensor
+  // Gas Relay
+  hardwareDefinition.gasRelayPin = 7;
   hardwareDefinition.secondGasRelay=false;          // is there a pin for a second gas relay
-  hardwareDefinition.ethernetSupport=true;          // is there an ethernet shield installed?
-  
-  
+  hardwareDefinition.gasRelayTwoPin = 0;
+  // Ethernet
+  hardwareDefinition.ethernetSupport=false;         // is there an ethernet shield installed?
+  hardwareDefinition.ethernetPin = 0;
 }
 
 void loop() {

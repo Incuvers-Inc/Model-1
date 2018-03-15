@@ -25,7 +25,9 @@ class IncuversHeatingSystem {
     boolean stepping_Door;
     boolean heatOn_Chamber;
     boolean stepping_Chamber;
-
+    boolean alarmOver;
+    boolean alarmUnder;
+    
     float tempDoor;
     float tempChamber;
     float setPoint;
@@ -127,7 +129,7 @@ class IncuversHeatingSystem {
           if (heatOn_Chamber) {
             // already engaged, check for delta
             if (shutChamberHeatAt < tickTime) {
-              //statusHolder.AlarmHeatChamberUnderTemp = true;
+              //alarmUnder = true;
             }
           } else {
             digitalWrite(PINASSIGN_HEATCHAMBER, HIGH);
@@ -151,7 +153,7 @@ class IncuversHeatingSystem {
         }
         if (tempChamber > (setPoint * ALARM_THRESH)) {
           // Alarm
-          //statusHolder.AlarmHeatChamberOverTemp = true;
+          alarmOver = true;
           #ifdef DEBUG_TEMP
           Serial.println(F("Chamber over-temp alarm"));
           #endif
@@ -179,7 +181,7 @@ class IncuversHeatingSystem {
           if (heatOn_Door) {
             // already engaged, check for delta
             if (shutDoorHeatAt < tickTime) {
-              //statusHolder.AlarmHeatDoorUnderTemp = true;
+              //alarmUnder = true;
             }
           } else {
             digitalWrite(PINASSIGN_HEATDOOR, HIGH);
@@ -192,7 +194,7 @@ class IncuversHeatingSystem {
           }
         }
       } else {
-        // Chamber temp. is over setpoint.
+        // Door temp. is over setpoint.
         if (heatOn_Door && !stepping_Door) {
           // turn off the heater
           digitalWrite(PINASSIGN_HEATDOOR, LOW);
@@ -203,7 +205,7 @@ class IncuversHeatingSystem {
         }
         if (tempDoor > (setPoint * ALARM_THRESH)) {
           // Alarm
-          //statusHolder.AlarmHeatDoorOverTemp = true;
+          alarmOver = true;
           #ifdef DEBUG_TEMP
           Serial.println(F("Door over-temp alarm"));
           #endif
@@ -332,6 +334,18 @@ class IncuversHeatingSystem {
       return stepping_Chamber;
     }
 
+    boolean isAlarmed() {
+      if (alarmOver || alarmUnder) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    void ResetAlarms() {
+      alarmOver = false;
+      alarmUnder = false;
+    }
 };
 
 

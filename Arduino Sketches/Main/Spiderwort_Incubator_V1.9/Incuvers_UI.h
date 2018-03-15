@@ -1,3 +1,6 @@
+#define MENU_UI_LOAD_DELAY 75
+#define MENU_UI_POST_DELAY 250
+#define MENU_UI_REDRAW_DELAY 500
 #define BUTTON_SECONDPOLLDELAY 250
 #define BUTTON_LOOPCOUNTFASTFORWARD 5
 #define BUTTON_FASTFORWARDRATE 10
@@ -50,7 +53,7 @@ char GetIndicator(boolean enabled, boolean stepping, boolean altSymbol, boolean 
   return r;
 }
 
-boolean IsSameOWAddress(byte addrA[8], byte addrB[8]) {
+/*boolean IsSameOWAddress(byte addrA[8], byte addrB[8]) {
   boolean isTheSame = true;
   for (int i=0; i<8; i++) {
     if (addrA[i] != addrB[i]) {
@@ -65,7 +68,7 @@ boolean IsSameOWAddress(byte addrA[8], byte addrB[8]) {
     }
   }
   return isTheSame;
-} 
+} */
 
 class IncuversUI {
   private:
@@ -219,8 +222,9 @@ class IncuversUI {
       Serial.print(GetIndicator(incSet->isCO2Open(), incSet->isCO2Stepping(), false, true));
       Serial.print(GetIndicator(incSet->isO2Open(), incSet->isO2Stepping(), false, true));
       Serial.print(F(" OA "));
-      Serial.print("");
-      Serial.print("");
+      Serial.print(GetIndicator(incSet->isHeatAlarmed(), false, false, true));
+      Serial.print(GetIndicator(incSet->isCO2Alarmed(), false, false, true));
+      Serial.print(GetIndicator(incSet->isO2Alarmed(), false, false, true));
       #ifdef DEBUG_MEMORY
       Serial.print(F(" FM "));
       Serial.print(freeMemory());
@@ -229,73 +233,20 @@ class IncuversUI {
     }
     
     void AlarmOrchestrator() {
-    /*  if (statusHolder.AlarmTempSensorMalfunction == true) {
-        // There's not much we can do for this one but turn off/disable the heating system.
-        ShutdownHeatSystem();
-        settingsHolder.heatMode = 0;
+      if ((incSet->isHeatAlarmed() || incSet->isCO2Alarmed() || incSet->isO2Alarmed())/* && incSet->getAlarmMode() == 2*/) {
+        incSet->MakeSafeState();
+        Wire.beginTransmission(0x20); // Connect to chip
+        Wire.write(0x13);             // Address port B
+        Wire.write(0x01);                // Sound On
+        Wire.endTransmission();       // Close connection
+        delay(500);
+        Wire.beginTransmission(0x20); // Connect to chip
+        Wire.write(0x13);             // Address port B
+        Wire.write(0x00);                // Sound On
+        Wire.endTransmission();       // Close connection
+        delay(500);
+        incSet->ResetAlarms();
       }
-    
-      if (statusHolder.AlarmCO2SensorMalfunction == true) {
-        // There's not much we can do for this one but turn off/disable the heating system.
-        ShutdownCO2System();
-        settingsHolder.CO2Mode = 0;
-      }
-    
-      if (statusHolder.AlarmHeatDoorOverTemp == true || 
-          /*statusHolder.AlarmHeatDoorUnderTemp == true || 
-      //    statusHolder.AlarmHeatChamberOverTemp == true || 
-       //   statusHolder.AlarmHeatChamberUnderTemp == true) {
-        ShutdownHeatSystem();
-        ShutdownCO2System(); 
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print("Temp. Error");
-        lcd.setCursor(0, 1);
-        lcd.print(statusHolder.TempChamber, 1);
-        lcd.print("\337C | ");
-        lcd.print(statusHolder.TempDoor, 1);
-        lcd.print("\337C");
-        
-        while (GetButtonState() != 3){
-          Wire.beginTransmission(0x20); // Connect to chip
-          Wire.write(0x13);             // Address port B
-          Wire.write(0x01);                // Sound On
-          Wire.endTransmission();       // Close connection
-          delay(500);
-          Wire.beginTransmission(0x20); // Connect to chip
-          Wire.write(0x13);             // Address port B
-          Wire.write(0x00);                // Sound On
-          Wire.endTransmission();       // Close connection
-          delay(500);
-        }   
-      }
-    
-      if (statusHolder.AlarmCO2OverSaturation == true || 
-          statusHolder.AlarmCO2UnderSaturation == true) {
-        ShutdownHeatSystem();
-        ShutdownCO2System(); 
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print("CO2 Error");
-        lcd.setCursor(0, 1);
-        lcd.print("CO2: ");
-        lcd.print(statusHolder.CO2Reading, 1);
-        lcd.print("% ");
-        
-        while (GetButtonState() != 3){
-          Wire.beginTransmission(0x20); // Connect to chip
-          Wire.write(0x13);             // Address port B
-          Wire.write(0x01);                // Sound On
-          Wire.endTransmission();       // Close connection
-          delay(500);
-          Wire.beginTransmission(0x20); // Connect to chip
-          Wire.write(0x13);             // Address port B
-          Wire.write(0x00);                // Sound On
-          Wire.endTransmission();       // Close connection
-          delay(500);
-        }    
-      }
-      */
     }
     
     int PollButton() {
@@ -312,10 +263,15 @@ class IncuversUI {
     
     int GetButtonState() {
       // instead of reading the button once which can cause misreads during a button change operation, if the first reading is not 0, take two more readings a few moments apart to verify what the user wants to do.
-      int c, s, r = 0;
+      int c = 0, s = 0, r = 0;
     
       c = PollButton();
-    
+      
+      #ifdef DEBUG_UI
+        Serial.print(F("Poll: "));
+        Serial.println(c);
+      #endif
+      
       if (c != 0) {
         if (c == lastButtonState) {
           // the button is in the same state as it was at the previous polling,
@@ -343,26 +299,12 @@ class IncuversUI {
       return r;
     }
 
-    int GetNewGasMode(int mode, int altMode) {
-      if (mode != 0) {
-        return 0; // gas is on, turn it off.
-      } else if (mode == 0 && (altMode == 0 || (altMode == 2 && incSet->isSecondGasSensorSupported()))) {
-        return 1; // both gases are off, can start with first
-      } else if (mode == 0 && altMode == 1 && incSet->isSecondGasSensorSupported()) {
-        return 2;
-      } else {
-        return 0; // default to off as we don't have 'room'
-      }
-    }
-
-    void DoFeatureSet(int feat)
+    void DoFeatureToggle(int feat)
     {
       boolean doLoop = true;
       boolean redraw = true;
       int userInput;
       int mode;
-      int altMode;
-      int countOfEnabledGases;
       String tag;
       String onTag;
       
@@ -381,17 +323,15 @@ class IncuversUI {
               break;
             case 3: // CO2
               mode = incSet->getCO2Mode();
-              altMode = incSet->getO2Mode();
               tag = F("CO2: ");
-              if (mode == 1) { onTag = F("First   "); }
-              if (mode == 2) { onTag = F("Second  "); }
+              if (incSet->getCO2Mode() == 1) { onTag = F("Monitor "); }
+              if (incSet->getCO2Mode() == 2) { onTag = F("Maintain"); }
               break;
             case 4: // O2
               mode = incSet->getO2Mode();
-              altMode = incSet->getCO2Mode();
               tag = F("O2: ");
-              if (mode == 1) { onTag = F("First   "); }
-              if (mode == 2) { onTag = F("Second  "); }
+              if (incSet->getO2Mode() == 1) { onTag = F("Monitor "); }
+              if (incSet->getO2Mode() == 2) { onTag = F("Maintain"); }
               break;
           }
           lcd->clear();
@@ -431,14 +371,18 @@ class IncuversUI {
                 break;
               case 3: // CO2
                 if (incSet->getCO2Mode() == 0) {
-                  incSet->setCO2Mode(GetNewGasMode(mode, altMode));
+                  incSet->setCO2Mode(1);
+                } else if (incSet->getCO2Mode() == 1) {
+                  incSet->setCO2Mode(2);
                 } else {
                   incSet->setCO2Mode(0);
                 }
                 break;
               case 4: // O2
                 if (incSet->getO2Mode() == 0) {
-                  incSet->setO2Mode(GetNewGasMode(mode, altMode));
+                  incSet->setO2Mode(1);
+                } else if (incSet->getO2Mode() == 1) {
+                  incSet->setO2Mode(2);
                 } else {
                   incSet->setO2Mode(0);
                 }
@@ -569,7 +513,7 @@ class IncuversUI {
             } else if (userInput == 1 || userInput == 2) {
               if (userInput == 1) { AdjustTempSetting(true); } else { AdjustTempSetting(false); }
               redraw = true;
-              delay(MENU_UI_POST_DELAY*2);
+              delay(MENU_UI_REDRAW_DELAY);
             }
             break;
           case 2 :
@@ -579,7 +523,7 @@ class IncuversUI {
             } else if (userInput == 1 || userInput == 2) {
               if (userInput == 1) { AdjustCO2Setting(true); } else { AdjustCO2Setting(false); }
               redraw = true;
-              delay(MENU_UI_POST_DELAY*2);
+              delay(MENU_UI_REDRAW_DELAY);
             }
             break;
           case 3 :
@@ -589,17 +533,19 @@ class IncuversUI {
             } else if (userInput == 1 || userInput == 2) {
               if (userInput == 1) { AdjustO2Setting(true); } else { AdjustO2Setting(false); }
               redraw = true;
-              delay(MENU_UI_POST_DELAY*2);
+              delay(MENU_UI_REDRAW_DELAY);
             }
             break;
           }
         
-       
-        userInput = GetButtonState();
+        if (!redraw) {
+          userInput = GetButtonState();
+        }
         
         switch (userInput) {
           case 0:
             redraw=false;
+            delay(MENU_UI_POST_DELAY);
             break;
           case 1:
             // Will take care of it on the next loop run
@@ -689,9 +635,10 @@ class IncuversUI {
           case 1:
             if (redraw) {
               DrawMainMenuPage("Set Temp.", "", true, "", "");
+              delay(MENU_UI_POST_DELAY);
+              redraw=false;
             } else if (userInput == 1) {
               DoVariableAdjust(1);
-              delay(MENU_UI_POST_DELAY);
               redraw = true;
               userInput = 0;
             }
@@ -699,9 +646,10 @@ class IncuversUI {
           case 2:
             if (redraw) {
               DrawMainMenuPage("Set CO2", "", true, "", "");
+              delay(MENU_UI_POST_DELAY);
+              redraw=false;
             } else if (userInput == 1) {
               DoVariableAdjust(2);
-              delay(MENU_UI_POST_DELAY);
               redraw = true;
               userInput = 0;
             }
@@ -709,9 +657,10 @@ class IncuversUI {
           case 3:
             if (redraw) {
               DrawMainMenuPage("Set O2", "", true, "", "");
+              delay(MENU_UI_POST_DELAY);
+              redraw=false;
             } else if (userInput == 1) {
               DoVariableAdjust(3);
-              delay(MENU_UI_POST_DELAY);
               redraw = true;
               userInput = 0;
             }
@@ -719,9 +668,9 @@ class IncuversUI {
           case 4:
             if (redraw) {
               DrawMainMenuPage("Settings", "", false, "Save", "Advanced");
+              redraw=false;
             } else if (userInput == 1) {
               DoSaveSettings();
-              delay(MENU_UI_POST_DELAY);
               doLoop = false;
               userInput = 0;
             }
@@ -729,9 +678,10 @@ class IncuversUI {
           case 5:
             if (redraw) {
               DrawMainMenuPage("Heating", "", true, "", "");
-            } else if (userInput == 1) {
-              DoFeatureSet(1);
               delay(MENU_UI_POST_DELAY);
+              redraw=false;
+            } else if (userInput == 1) {
+              DoFeatureToggle(1);
               redraw = true;
               userInput = 0;
             }
@@ -739,9 +689,10 @@ class IncuversUI {
           case 6:
             if (redraw) {
               DrawMainMenuPage("Fan Mode", "", true, "", "");
-            } else if (userInput == 1) {
-              DoFeatureSet(2);
               delay(MENU_UI_POST_DELAY);
+              redraw=false;
+            } else if (userInput == 1) {
+              DoFeatureToggle(2);
               redraw = true;
               userInput = 0;
             }
@@ -749,9 +700,10 @@ class IncuversUI {
           case 7:
             if (redraw) {
               DrawMainMenuPage("CO2", "", true, "", "");
-            } else if (userInput == 1) {
-              DoFeatureSet(3);
               delay(MENU_UI_POST_DELAY);
+              redraw=false;
+            } else if (userInput == 1) {
+              DoFeatureToggle(3);
               redraw = true;
               userInput = 0;
             }
@@ -759,9 +711,10 @@ class IncuversUI {
           case 8:
             if (redraw) {
               DrawMainMenuPage("Oxygen", "", true, "", "");
-            } else if (userInput == 1) {
-              DoFeatureSet(4);
               delay(MENU_UI_POST_DELAY);
+              redraw=false;
+            } else if (userInput == 1) {
+              DoFeatureToggle(4);
               redraw = true;
               userInput = 0;
             }
@@ -769,9 +722,10 @@ class IncuversUI {
           case 9:
             if (redraw) {
               DrawMainMenuPage("Information", "", true, "", "");
+              delay(MENU_UI_POST_DELAY);
+              redraw=false;
             } else if (userInput == 1) {
               ShowInfo();
-              delay(MENU_UI_POST_DELAY);
               redraw = true;
               userInput = 0;
             }
@@ -779,9 +733,10 @@ class IncuversUI {
           case 10:
             if (redraw) {
               DrawMainMenuPage("Defaults", "", false, "Reset", "Next");
+              redraw=false;
             } else if (userInput == 1) {
               delay(MENU_UI_POST_DELAY);
-              //doResetToDefaults();
+              incSet->ResetSettingsToDefaults();
               lcd->clear();
               lcd->setCursor(0, 0);
               lcd->print(F("Reset to default"));
@@ -793,6 +748,7 @@ class IncuversUI {
           case 11:
             if (redraw) {
               DrawMainMenuPage("Settings", "", false, "Save", "Basic");
+              redraw=false;
             } else if (userInput == 1) {
               DoSaveSettings();
               delay(MENU_UI_POST_DELAY);
@@ -801,10 +757,12 @@ class IncuversUI {
             }
             break;
         }
+
+        if (!redraw) {
+          delay(MENU_UI_POST_DELAY);
+          userInput = GetButtonState();
+        }
         
-        //delay(MENU_UI_REDRAW_DELAY);
-              
-        userInput = GetButtonState();
         switch (userInput) {
           case 0:
             delay(MENU_UI_LOAD_DELAY);
@@ -925,13 +883,8 @@ class IncuversUI {
           lcd->print(CentreStringForDisplay(F("Saved Settings"),16));
           break;
         case 2 :
-          lcd->print(CentreStringForDisplay(F("Default Settings"),16));
-          break;
         case 3 :
-          lcd->print(CentreStringForDisplay(F("Bad Config!"),16));
-          break;
-        case 4 :
-          lcd->print(CentreStringForDisplay(F("Updating"),16));
+          lcd->print(CentreStringForDisplay(F("Default Settings"),16));
           break;
       }
       this->DisplayLoadingBar();
@@ -951,6 +904,18 @@ class IncuversUI {
       incSet->MakeSafeState();
       SetupLoop();
     }
+
+    void WarnOfMissingHardwareSettings() {
+      while (true) {
+        this->lcd->clear();
+        delay(500);
+        this->lcd->setCursor(0,0);
+        this->lcd->print(CentreStringForDisplay(F("Hardware not"),16));
+        this->lcd->setCursor(0,1);
+        this->lcd->print(CentreStringForDisplay(F("initialized!"),16));
+        delay(4500);
+      }
+    }
     
     void DoTick() {
       LCDDrawDefaultUI();
@@ -961,33 +926,10 @@ class IncuversUI {
       }
    
       SerialPrintStatus();
+      // Do the alarm orchestrator last as it will reset alarms whichw e want present in the PrintStatus above.
+      AlarmOrchestrator();
     }
     
 };
 
-
-/*
-String GetFanSettingString() {
-  String ret;
-  
-  switch(settingsHolder.fanMode) {
-    case 0:
-      ret = F("Öff");
-      break;
-    case 1:
-      ret = F("Heat + 30s");
-      break;
-    case 2:
-      ret = F("Heat + 60s");
-      break;
-    case 3:
-      ret = F("Heat + 50%");
-      break;
-    case 4:
-      ret = F("Ön");
-      break;
-  }
-  return ret;
-}
-*/
 

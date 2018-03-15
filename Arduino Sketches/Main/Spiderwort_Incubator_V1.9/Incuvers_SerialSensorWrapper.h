@@ -10,7 +10,14 @@ class IncuversSerialSensor {
     void Initialize(int pinRx, int pinTx, boolean useStreamMode) {
       this->useStreaming = useStreamMode;
       this->ss = new SoftwareSerial(pinRx, pinTx); // Rx,Tx
+    }
+
+    void StartSensor() {
       this->ss->begin(9600);
+    }
+
+    void StartListening() {
+      this->ss->listen();
     }
 
     String GetSerialSensorReading(int minLen, int maxLen) {
@@ -42,10 +49,11 @@ class IncuversSerialSensor {
         #endif
         while(this->ss->available() && !stringComplete) {
           inChar = (char)this->ss->read();         // grab the next char
-          currString += inChar;             // add the received char to CozirString
-          i++;
-          if (inChar == '\r') {             // if the incoming character is a newline - the end of a record, let's verify what we have
-            if (i > minLen && i < maxLen) {
+          if (inChar != '\n' && inChar != '\r' ) {    
+            currString += inChar;                  // add the received char to the String
+            i++;
+          } else {  // if the incoming character is a newline - the end of a record, let's verify what we have
+            if (i > minLen) {
               // we have a full string, but is it the last string?
               if (this->ss->available() > minLen) {
                 // there's another entry of data in the queue, lets get it.

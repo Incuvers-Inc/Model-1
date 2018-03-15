@@ -13,10 +13,8 @@ class IncuversCO2System {
     int pinAssignment_Valve;
     int mode;
     
-    long lastCO2Check;
     long tickTime;
     long actionpoint;
-    long setPointTime;
     long startCO2At;
     long shutCO2At;
 
@@ -24,6 +22,8 @@ class IncuversCO2System {
     boolean on;
     boolean stepping;
     boolean started;
+    boolean alarmOver;
+    boolean alarmUnder;
     
     float level;
     float setPoint;
@@ -66,7 +66,7 @@ class IncuversCO2System {
     
         reading = GetIntegerSensorReading('Z', cozirString, -1);
     
-        if (reading > 0 && reading < 30) {
+        if (reading > 0 && reading < 300000) {
           level = (float)((CO2_MULTIPLIER * reading)/10000);  
           #ifdef  DEBUG_CO2
             Serial.print("  CO2 level: ");
@@ -106,7 +106,7 @@ class IncuversCO2System {
               this->startCO2At = this->tickTime;
             } else {
               if (this->startCO2At + ALARM_CO2_OPEN_PERIOD < this->tickTime) {
-                //statusHolder.AlarmCO2UnderSaturation = true;
+                alarmUnder = true;
                 #ifdef DEBUG_CO2 
                   Serial.println(F("\tCO2 under-saturation alarm thrown"));
                 #endif
@@ -133,7 +133,7 @@ class IncuversCO2System {
         this->started = false;
         if (level > (setPoint * ALARM_THRESH)) {
           // Alarm
-          //statusHolder.AlarmCO2OverSaturation = true;
+          alarmOver = true;
           #ifdef DEBUG_CO2 
             Serial.println(F("\tO2 over-saturation alarm"));
           #endif
@@ -142,46 +142,36 @@ class IncuversCO2System {
     }
 
   public:
-    void SetupCO2(int rxPin, int txPin, int gasMode, int relayPin) {
+    void SetupCO2(int rxPin, int txPin, int relayPin) {
       #ifdef DEBUG_CO2
         Serial.println(F("CO2::Setup"));
       #endif
       
-      if (gasMode == 0) {
-        #ifdef DEBUG_CO2
-          Serial.println(F("Disabled"));
-        #endif
-        this->enabled = false;
-        level = -100;
-      } else {
-        this->enabled = true;
-        // Setup Serial Interface
-        this->iSS = new IncuversSerialSensor();
-        this->iSS->Initialize(rxPin, txPin, true); 
-        
-        //Setup the gas system
-        this->pinAssignment_Valve = relayPin;
-        pinMode(this->pinAssignment_Valve, OUTPUT);
-        
-        #ifdef DEBUG_CO2
-          Serial.println(F("Enabled"));
-          Serial.print(F("  Rx: "));
-          Serial.println(rxPin);
-          Serial.print(F("  Tx: "));
-          Serial.println(txPin);
-          Serial.print(F("  Relay: "));
-          Serial.println(relayPin);
-        #endif
+      this->enabled = false;
+      level = -100;
+      // Setup Serial Interface
+      this->iSS = new IncuversSerialSensor();
+      this->iSS->Initialize(rxPin, txPin, true); 
+      
+      //Setup the gas system
+      this->pinAssignment_Valve = relayPin;
+      pinMode(this->pinAssignment_Valve, OUTPUT);
+      
+      #ifdef DEBUG_CO2
+        Serial.println(F("Enabled"));
+        Serial.print(F("  Rx: "));
+        Serial.println(rxPin);
+        Serial.print(F("  Tx: "));
+        Serial.println(txPin);
+        Serial.print(F("  Relay: "));
+        Serial.println(relayPin);
+      #endif
   
-        this->MakeSafeState();
-      }
-  
-      this->mode = gasMode;
+      this->MakeSafeState();
     }
 
     void SetSetPoint(float tempSetPoint) {
       this->setPoint = tempSetPoint;
-      this->setPointTime = millis();
     }
     
     void MakeSafeState() {
@@ -193,17 +183,25 @@ class IncuversCO2System {
       }
     }
 
+    void DoMiniTick() {
+      if (this->enabled) {
+        this->iSS->StartListening();
+      }
+    }
+
     void DoTick() {
       if (this->enabled) {
         this->tickTime = millis();
       
-        if (!this->stepping) {
+        if (mode == 2 && !this->stepping) {
           this->CheckJumpStatus();  
         }
 
         this->GetCO2Reading_Cozir();
 
-        this->CheckCO2Maintenance();
+        if (mode == 2) {
+          this->CheckCO2Maintenance();
+        }
       }
     }
 
@@ -220,7 +218,27 @@ class IncuversCO2System {
     }
 
     void UpdateMode(int mode) {
-      this->enabled = false;
+      this->mode = mode;
+      if (mode == 0) {
+        MakeSafeState();
+        this->enabled = false;
+      } else {
+        this->enabled = true;
+        this->iSS->StartSensor();
+      }
+    }
+
+    boolean isAlarmed() {
+      if (alarmOver || alarmUnder) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    void ResetAlarms() {
+      alarmOver = false;
+      alarmUnder = false;
     }
 
 };

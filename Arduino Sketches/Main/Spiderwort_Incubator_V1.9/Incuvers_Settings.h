@@ -1,11 +1,9 @@
 // Hardware settings definitions
-#define HARDWARE_IDENT "IM1"
+#define HARDWARE_IDENT "M1a"
 #define HARDWARE_ADDRS 4 
 
 // Settings definitions
-#define SETTINGS_IDENT_14 14
-#define SETTINGS_IDENT_17 17
-#define SETTINGS_IDENT_CURR 19
+#define SETTINGS_IDENT_CURR 20
 #define SETTINGS_ADDRS 64
 
 // Defaults
@@ -13,51 +11,29 @@
 #define CO2_DEF 5.0
 #define OO_DEF 5.0
 
-
-
 // Structures
 struct HardwareStruct {
   byte ident[3];
   // Identification
   byte hVer[3];
   byte serial;
-  // Pin settings
-  byte relayOnePin;
-  byte relayTwoPin;
-  byte sensorOneRxPin;
-  byte sensorOneTxPin;
-  byte sensorTwoRxPin;
-  byte sensorTwoTxPin;
-  // Installed Components
+  // Temp settings
   byte countOfTempSensors;
-  bool secondGasSensor;
-  bool secondGasRelay;
-  bool secondGasBidirectional;
-  bool ethernetSupport;
   byte sensorAddrDoorTemp[8];
   byte sensorAddrChamberTemp[8];
-};
-
-struct HardwareDefinition {
-  // Identification
-  String identification;
-  String serial;
-  // Pin settings
-  int relayOnePin;
-  int relayTwoPin;
-  int sensorOneRxPin;
-  int sensorOneTxPin;
-  int sensorTwoRxPin;
-  int sensorTwoTxPin;
-  int ethernetPin;
-  // Installed Components
-  int countOfTempSensors;
-  bool secondGasSensor;
-  bool secondGasRelay;
-  bool secondGasBidirectional;
+  // CO2 settings
+  bool hasCO2Sensor;
+  byte CO2RxPin;
+  byte CO2TxPin;
+  // O2 settings
+  bool hasO2Sensor;
+  byte O2RxPin;
+  byte O2TxPin;
+  // Gas Relay
+  byte gasRelayPin;
+  // Ethernet
   bool ethernetSupport;
-  byte sensorAddrDoorTemp[8];
-  byte sensorAddrChamberTemp[8];
+  byte ethernetPin;
 };
 
 struct SettingsStruct_Curr {
@@ -68,45 +44,19 @@ struct SettingsStruct_Curr {
   byte heatMode;      // 0 = off, 1 = on
   float heatSetPoint;
   // CO2 settings
-  byte CO2Mode;       // 0 = off, all other numbers indicates sensorID
-  byte CO2Relay;      // 0 = off, all other numbers indicates relayID
+  byte CO2Mode;       // 0 = off, 1 = read, 2 = maintain
   float CO2SetPoint;
   // O2 settings
-  byte O2Mode;        // 0 = off, all other numbers indicates sensorID
-  byte O2Relay;       // 0 = off, all other numbers indicates relayID
+  byte O2Mode;        // 0 = off, 1 = read, 2 = maintain
   float O2SetPoint;
-};
-
-struct SettingsStruct_17 {
-  byte ident;
-  // Temp settings
-  bool heatEnable;
-  float heatSetPoint;
-  byte sensorAddrDoorTemp[8];
-  byte sensorAddrChamberTemp[8];
-  // CO2 settings
-  bool CO2Enable;
-  float CO2SetPoint;
-  // O2 settings
-  bool O2Enable;
-  float O2SetPoint;
-};
-
-struct SettingsStruct_14 {
-  byte ident;
-  // Temp settings
-  bool heatEnable;
-  float heatSetPoint;
-  byte sensorAddrDoorTemp[8];
-  byte sensorAddrChamberTemp[8];
-  // CO2 settings
-  bool CO2Enable;
-  float CO2SetPoint;
+  // Alarm settings
+  byte alarmMode;     // 0 = off, 1 = report, 2 = alarm
+  
 };
 
 class IncuversSettingsHandler {
   private:
-    HardwareDefinition settingsHardware;
+    HardwareStruct settingsHardware;
     SettingsStruct_Curr settingsHolder;
   
     IncuversHeatingSystem* incHeat;
@@ -114,7 +64,6 @@ class IncuversSettingsHandler {
     IncuversO2System* incO2;
     
     int personalityCount;
-    
     
     int VerifyEEPROMHeader(int startAddress, boolean isHardware) {
       #ifdef DEBUG_EEPROM
@@ -148,7 +97,7 @@ class IncuversSettingsHandler {
           ret = -1;
         }
       } else {
-        if (eepromContent[0] == SETTINGS_IDENT_14 || eepromContent[0] == SETTINGS_IDENT_17 ||  eepromContent[0] == SETTINGS_IDENT_CURR) {
+        if (eepromContent[0] == SETTINGS_IDENT_CURR) {
           ret = (int)eepromContent[0]; 
         } else {
           ret = -1;
@@ -175,27 +124,9 @@ class IncuversSettingsHandler {
       if (headerCheck == -1) {
         // uninitialized hardware
         #ifdef DEBUG_EEPROM
-          Serial.println(F("\tNo hardware settings found, defaulting to original specs."));
+          Serial.println(F("\tNo hardware settings found, can't run."));
         #endif
-        
-        this->settingsHardware.identification = F("0.9.3");
-        this->settingsHardware.serial = F("XXXX");
-        this->settingsHardware.relayOnePin = PINASSIGN_CO2RELAY;
-        this->settingsHardware.relayTwoPin = PINASSIGN_NRELAY;
-        this->settingsHardware.sensorOneRxPin = PINASSIGN_CO2SENSOR_RX;
-        this->settingsHardware.sensorOneTxPin = PINASSIGN_CO2SENSOR_TX;
-        this->settingsHardware.sensorTwoRxPin = PINASSIGN_O2SENSOR_RX;
-        this->settingsHardware.sensorTwoTxPin = PINASSIGN_O2SENSOR_TX;
-        this->settingsHardware.ethernetPin = 10;
-        this->settingsHardware.countOfTempSensors = 2;
-        this->settingsHardware.secondGasSensor = false;
-        this->settingsHardware.secondGasRelay = false;
-        this->settingsHardware.secondGasBidirectional = false;
-        this->settingsHardware.ethernetSupport = false;
-        for (int i = 0; i < 8; i++) {
-          this->settingsHardware.sensorAddrDoorTemp[i] = 0;
-          this->settingsHardware.sensorAddrChamberTemp[i] = 0;
-        }
+        return false;
       } else {
         #ifdef DEBUG_EEPROM
           Serial.print(F("  The hardwareData ident matched, loading "));
@@ -206,107 +137,11 @@ class IncuversSettingsHandler {
         for (int i = 0; i < sizeof(hardwareData); i++) {
           *((char*)&hardwareData + i) = EEPROM.read(HARDWARE_ADDRS + i);    
         }
-    
-        this->settingsHardware.identification = String(hardwareData.hVer[0]) + "." + String(hardwareData.hVer[1]) + "." + String(hardwareData.hVer[2]);
-        this->settingsHardware.serial = String(hardwareData.serial);
-        this->settingsHardware.relayOnePin = (int)hardwareData.relayOnePin;
-        this->settingsHardware.relayTwoPin = (int)hardwareData.relayTwoPin;
-        this->settingsHardware.sensorOneRxPin = (int)hardwareData.sensorOneRxPin;
-        this->settingsHardware.sensorOneTxPin = (int)hardwareData.sensorOneTxPin;
-        this->settingsHardware.sensorTwoRxPin = (int)hardwareData.sensorTwoRxPin;
-        this->settingsHardware.sensorTwoTxPin = (int)hardwareData.sensorTwoTxPin;
-        this->settingsHardware.ethernetPin = 10;
-        this->settingsHardware.secondGasSensor = (bool)hardwareData.secondGasSensor;
-        this->settingsHardware.secondGasRelay = (bool)hardwareData.secondGasRelay;
-        this->settingsHardware.secondGasBidirectional = (bool)hardwareData.secondGasBidirectional;
-        this->settingsHardware.ethernetSupport = (bool)hardwareData.ethernetSupport;
-        for (int i = 0; i < 8; i++) {
-          this->settingsHardware.sensorAddrDoorTemp[i] = hardwareData.sensorAddrDoorTemp[i];
-          this->settingsHardware.sensorAddrChamberTemp[i] = hardwareData.sensorAddrChamberTemp[i];
-        }
+        return true;
       }
     
       #ifdef DEBUG_EEPROM
         Serial.println(F("/HardwareSet"));
-      #endif
-      return true;
-    }
-
-    void ImportSettings_17() {
-      SettingsStruct_17 settingsHolder_17;
-      #ifdef DEBUG_EEPROM
-        Serial.println(F("Import17()"));
-        Serial.print(F("\t"));
-        Serial.print(sizeof(settingsHolder_17));
-        Serial.print(F(" bytes w/ ID: "));
-        Serial.print(SETTINGS_IDENT_17);
-        Serial.print(F(" @ "));
-        Serial.println(SETTINGS_ADDRS);
-      #endif
-      for (unsigned int i = 0; i < sizeof(settingsHolder_17); i++) {
-        *((char*)&settingsHolder_17 + i) = EEPROM.read(SETTINGS_ADDRS + i);    
-      }
-      ResetSettingsToDefaults();
-    
-      if (settingsHolder_17.heatEnable) {
-        this->settingsHolder.heatMode = 1;
-      } else {
-        this->settingsHolder.heatMode = 0;
-      }
-      this->settingsHolder.heatSetPoint = settingsHolder_17.heatSetPoint;
-      if (settingsHolder_17.CO2Enable) {
-        this->settingsHolder.CO2Mode = 1;
-      } else {
-        this->settingsHolder.CO2Mode = 0;
-      }
-      this->settingsHolder.CO2SetPoint = settingsHolder_17.CO2SetPoint;
-      if (settingsHolder_17.O2Enable) {
-        if (settingsHolder_17.CO2Enable) {
-          this->settingsHolder.O2Mode = 2;
-        } else {
-          this->settingsHolder.O2Mode = 1;
-        }
-      } else {
-        this->settingsHolder.O2Mode = 0;
-      }
-      this->settingsHolder.O2SetPoint = settingsHolder_17.O2SetPoint;
-      
-      #ifdef DEBUG_EEPROM
-        Serial.println(F("/Import17"));
-      #endif
-    }
-    
-    void ImportSettings_14() {
-      SettingsStruct_14 settingsHolder_14;
-      #ifdef DEBUG_EEPROM
-        Serial.println(F("Import14"));
-        Serial.print(F("\t"));
-        Serial.print(sizeof(settingsHolder_14));
-        Serial.print(F(" bytes w/ ID: "));
-        Serial.print(SETTINGS_IDENT_14);
-        Serial.print(F(" @ "));
-        Serial.println(SETTINGS_ADDRS);
-      #endif
-      for (unsigned int i = 0; i < sizeof(settingsHolder_14); i++) {
-        *((char*)&settingsHolder_14 + i) = EEPROM.read(SETTINGS_ADDRS + i);    
-      }
-      ResetSettingsToDefaults();
-    
-      if (settingsHolder_14.heatEnable) {
-        this->settingsHolder.heatMode = 1;
-      } else {
-        this->settingsHolder.heatMode = 0;
-      }
-      this->settingsHolder.heatSetPoint = settingsHolder_14.heatSetPoint;
-      if (settingsHolder_14.CO2Enable) {
-        this->settingsHolder.CO2Mode = 1;
-      } else {
-        this->settingsHolder.CO2Mode = 0;
-      }
-      this->settingsHolder.CO2SetPoint = settingsHolder_14.CO2SetPoint;
-      
-      #ifdef DEBUG_EEPROM
-        Serial.println(F("/Import14"));
       #endif
     }
 
@@ -346,12 +181,12 @@ class IncuversSettingsHandler {
       this->settingsHolder.heatSetPoint = TEMPERATURE_DEF; 
       // CO2 setup
       this->settingsHolder.CO2Mode = 1;
-      this->settingsHolder.CO2Relay = 1;
       this->settingsHolder.CO2SetPoint = CO2_DEF; 
       // O2 setup
       this->settingsHolder.O2Mode = 0;
-      this->settingsHolder.O2Relay = 0;
       this->settingsHolder.O2SetPoint = OO_DEF; 
+      // Alarm
+      this->settingsHolder.alarmMode = 2;
       #ifdef DEBUG_EEPROM
         Serial.println(F("/Defaults"));
       #endif
@@ -390,30 +225,18 @@ class IncuversSettingsHandler {
         Serial.println(F("LoadSettings"));
       #endif
       int runMode = 0;
-      bool hardwareResult = ReadHardwareSettings();
-      int settingsRes = VerifyEEPROMHeader((int)SETTINGS_ADDRS, false);
-    
-      if (settingsRes == -1) {
-        runMode = 2;
-        #ifdef DEBUG_EEPROM
-          Serial.println(F("\tNo settings found, using defaults."));
-        #endif
-        ResetSettingsToDefaults();
-      } else {
-        switch (settingsRes) {
-          case SETTINGS_IDENT_14:
-            ImportSettings_14();
-            runMode = 4;
-            break;
-          case SETTINGS_IDENT_17:
-            ImportSettings_17();
-            runMode = 4;
-            break;
-          case SETTINGS_IDENT_CURR:
-            runMode = ReadCurrentSettings();
-            break;
+      
+      if (ReadHardwareSettings()) {
+        if (VerifyEEPROMHeader((int)SETTINGS_ADDRS, false) == SETTINGS_IDENT_CURR) {
+          runMode = ReadCurrentSettings();
+        } else {
+          runMode = 2;
+          #ifdef DEBUG_EEPROM
+            Serial.println(F("\tNo settings found, using defaults."));
+          #endif
+          ResetSettingsToDefaults();
         }
-      }
+      } 
     
       #ifdef DEBUG_EEPROM
         Serial.println(F("/LoadSettings"));
@@ -457,47 +280,21 @@ class IncuversSettingsHandler {
     void AttachIncuversModule(IncuversCO2System* iCO2) {
       this->incCO2 = iCO2;
       
-      if (this->settingsHolder.CO2Mode == 1) {
-        this->incCO2->SetupCO2(this->settingsHardware.sensorOneRxPin, 
-                        this->settingsHardware.sensorOneTxPin, 
-                        this->settingsHolder.CO2Mode, 
-                        this->settingsHardware.relayOnePin);
-        this->incCO2->SetSetPoint(this->settingsHolder.CO2SetPoint);
-      } else if (this->settingsHolder.CO2Mode == 2) {
-        this->incCO2->SetupCO2(this->settingsHardware.sensorTwoRxPin, 
-                        this->settingsHardware.sensorTwoTxPin, 
-                        this->settingsHolder.CO2Mode, 
-                        this->settingsHardware.relayTwoPin);
-        this->incCO2->SetSetPoint(this->settingsHolder.CO2SetPoint);
-      } else {
-        this->incCO2->SetupCO2(A0, 
-                        A0, 
-                        this->settingsHolder.CO2Mode, 
-                        A0);
-      }
+      this->incCO2->SetupCO2(this->settingsHardware.CO2RxPin, 
+                             this->settingsHardware.CO2TxPin,
+                             this->settingsHardware.gasRelayPin);
+      this->incCO2->UpdateMode(this->settingsHolder.CO2Mode);                      
+      this->incCO2->SetSetPoint(this->settingsHolder.CO2SetPoint);
     }
 
     void AttachIncuversModule(IncuversO2System* iO2) {
       this->incO2 = iO2;
       
-      if (this->settingsHolder.O2Mode == 1) {
-        this->incO2->SetupO2(this->settingsHardware.sensorOneRxPin, 
-                        this->settingsHardware.sensorOneTxPin, 
-                        this->settingsHolder.O2Mode, 
-                        this->settingsHardware.relayOnePin);
-        this->incO2->SetSetPoint(this->settingsHolder.O2SetPoint);
-      } else if (this->settingsHolder.O2Mode == 2) {
-        this->incO2->SetupO2(this->settingsHardware.sensorTwoRxPin, 
-                        this->settingsHardware.sensorTwoTxPin, 
-                        this->settingsHolder.O2Mode, 
-                        this->settingsHardware.relayTwoPin);
-        this->incO2->SetSetPoint(this->settingsHolder.O2SetPoint);
-      } else {
-        this->incO2->SetupO2(A0, 
-                        A0, 
-                        this->settingsHolder.O2Mode, 
-                        A0);
-      } 
+      this->incO2->SetupO2(this->settingsHardware.O2RxPin, 
+                           this->settingsHardware.O2TxPin,
+                           this->settingsHardware.gasRelayPin);
+      this->incO2->UpdateMode(this->settingsHolder.O2Mode);                      
+      this->incO2->SetSetPoint(this->settingsHolder.O2SetPoint);
     }
 
     int getPersonalityCount() {
@@ -615,16 +412,12 @@ class IncuversSettingsHandler {
       return incO2->isNStepping();
     }
 
-    boolean isSecondGasSensorSupported() {
-      return this->settingsHardware.secondGasSensor;
-    }
-
     String getHardware() {
-      return this->settingsHardware.identification;  
+      return String(this->settingsHardware.hVer[0])+"."+String(this->settingsHardware.hVer[1])+"."+String(this->settingsHardware.hVer[3]);  
     }
     
     String getSerial() {
-      return this->settingsHardware.serial;
+      return String(this->settingsHardware.serial);
     }
 
     void MakeSafeState() {
@@ -632,6 +425,30 @@ class IncuversSettingsHandler {
       incCO2->MakeSafeState();
       incO2->MakeSafeState();
     }
+
+    boolean isHeatAlarmed() {
+      return incHeat->isAlarmed();
+    }
+
+    boolean isCO2Alarmed() {
+      return incCO2->isAlarmed();
+    }
+
+    boolean isO2Alarmed() {
+      return incO2->isAlarmed();
+    }
+
+    void ResetAlarms() {
+      incHeat->ResetAlarms();
+      incCO2->ResetAlarms();
+      incO2->ResetAlarms();
+    }
+    
+    int getAlarmMode() {
+      return this->settingsHolder.alarmMode;
+    }
+    
+
 };
 
 
