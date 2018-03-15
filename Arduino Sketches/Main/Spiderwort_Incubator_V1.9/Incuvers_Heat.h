@@ -44,23 +44,28 @@ class IncuversHeatingSystem {
       #endif
       boolean updateCompleted = false;
       int i = 0;
+      float tD, tC;
       
       while (!updateCompleted) {
         // Request the temperatures
         this->tempSensors->requestTemperatures();
         // Record the values
-        this->tempDoor = this->tempSensors->getTempC(this->sensorAddrDoorTemp);
-        this->tempChamber = this->tempSensors->getTempC(this->sensorAddrChamberTemp);
+        tD = this->tempSensors->getTempC(this->sensorAddrDoorTemp);
+        tC = this->tempSensors->getTempC(this->sensorAddrChamberTemp);
         
         #ifdef DEBUG_TEMP
           Serial.print(F("Door: "));
-          Serial.print(this->tempDoor);
+          Serial.print(tD);
           Serial.print(F("*C  Chamber: "));
-          Serial.print(this->tempChamber);
+          Serial.print(tC);
           Serial.println("*C");
         #endif  
-        if (this->tempDoor < 85.0 && this->tempChamber < 85.0 && this->tempDoor > -100 && this->tempChamber > -100) {
-          // we have valid readings
+
+        if (tD > -40.0 && tD < 85.0 ) {
+          tempDoor = tD;
+        }
+        if (tC > -40.0 && tC < 85.0 ) {
+          tempChamber = tC;
           updateCompleted = true;
         } else {
           i++;

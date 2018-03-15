@@ -622,12 +622,14 @@ class IncuversUI {
         }
 
         if (screen == 1 && incSet->getHeatMode() == 0) {
+          // heat disabled, skip heat setpoint screen
           screen++;
         }
-        if (screen == 2 && incSet->getCO2Mode() == 0) {
+        if (screen == 2 && incSet->getCO2Mode() < 2) {
+          // CO2 disables, skip setpoint screen
           screen++;
         }
-        if (screen == 3 && incSet->getO2Mode() == 0) {
+        if (screen == 3 && incSet->getO2Mode() < 2) {
           screen++;
         }
         

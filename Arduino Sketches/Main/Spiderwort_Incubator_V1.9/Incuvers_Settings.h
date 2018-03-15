@@ -226,7 +226,7 @@ class IncuversSettingsHandler {
       // Fan setup
       this->settingsHolder.fanMode = 4;
       // Heat setup
-      this->settingsHolder.heatMode = 0;
+      this->settingsHolder.heatMode = 1;
       this->settingsHolder.heatSetPoint = TEMPERATURE_DEF; 
       // CO2 setup
       this->settingsHolder.CO2Mode = 1;
