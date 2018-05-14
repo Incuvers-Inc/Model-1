@@ -1,6 +1,6 @@
 // Hardware tag to ensure incorrect data is not read.
-// M1a = Model 1, release a
-#define HARDWARE_IDENT "M1a"
+// M1b = Model 1, release b
+#define HARDWARE_IDENT "M1b"
 #define HARDWARE_ADDRS 4 
 
 // Structure
@@ -22,12 +22,16 @@ struct HardwareStruct {
   byte O2RxPin;
   byte O2TxPin;
   // Gas Relay
+  bool firstGasRelay;
   byte gasRelayPin;
   bool secondGasRelay;
   byte gasRelayTwoPin;
   // Ethernet
   bool ethernetSupport;
   byte ethernetPin;
+  // Lighting
+  bool lightingSupport;
+  byte lightPin;
 };
 
 #include "OneWire.h"
@@ -78,7 +82,7 @@ void setup() {
   hardwareDefinition.hVer[1]=9;
   hardwareDefinition.hVer[2]=3;
   // Hardware serial number
-  hardwareDefinition.serial=9999;             // Serial number as printed inside the top cover
+  hardwareDefinition.serial=666;             // Serial number as printed inside the top cover
   // Temperature sensors
   hardwareDefinition.countOfTempSensors=2;    // Count of temperature sensors installed
   for (int i = 0; i <8; i++) {
@@ -90,16 +94,20 @@ void setup() {
   hardwareDefinition.CO2RxPin=2;              // Default: 2
   hardwareDefinition.CO2TxPin=3;              // Default: 3
   // Oxygen sensor
-  hardwareDefinition.hasO2Sensor=false;       // Is there an O2 sensor present?
-  hardwareDefinition.O2RxPin=0;               // 
-  hardwareDefinition.O2TxPin=0;               // 
+  hardwareDefinition.hasO2Sensor=true;        // Is there an O2 sensor present?
+  hardwareDefinition.O2RxPin=10;              // 
+  hardwareDefinition.O2TxPin=9;               // 
   // Gas Relay
+  hardwareDefinition.firstGasRelay=true;      // Is there a gas valve present?
   hardwareDefinition.gasRelayPin = 7;         // Default: 7
-  hardwareDefinition.secondGasRelay=false;    // Is there a pin for a second gas valve/relay present?
+  hardwareDefinition.secondGasRelay=false;    // Is there a second gas valve present?
   hardwareDefinition.gasRelayTwoPin = 0;      // 
   // Ethernet
   hardwareDefinition.ethernetSupport=false;   // Is there an ethernet shield installed?
   hardwareDefinition.ethernetPin = 0;         // Default: 10 (when an O2 sensor is not installed)
+  // Lighting
+  hardwareDefinition.lightingSupport = false; // Is there an internal lighting system?
+  hardwareDefinition.lightPin = 0;            // 
 }
 
 void loop() {
