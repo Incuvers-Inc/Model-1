@@ -52,6 +52,13 @@ class IncuversSerialSensor {
             Serial.println(F(" bytes available "));
           }
         #endif
+        if (this->ss->available() > 3 * maxLen) {
+          // We have more than 3 times the maximum length of a value int he buffer, let's skip a bunch if
+          // data to save time.
+          for (int w = 0; w <= this->ss->available() - (2 * maxLen); w++) {
+            inChar = (char)this->ss->read();         //read/ignore a character
+          }
+        }
         while(this->ss->available() && !stringComplete) {
           inChar = (char)this->ss->read();         // grab the next char
           if (inChar != '\n' && inChar != '\r' ) {    
@@ -63,7 +70,13 @@ class IncuversSerialSensor {
               if (this->ss->available() > minLen) {
                 // there's another entry of data in the queue, lets get it.
                 lastString = currString; // just in case there's an error with the next bit of data
+                currString = "";
                 prevReadAvailable = true;
+                #ifdef DEBUG_SERIAL
+                  Serial.print(F("\t\t1: "));
+                  Serial.println(lastString);
+                #endif
+                i=0;
               } else {
                 stringComplete = true;
                 dataReadComplete = true;
@@ -73,12 +86,20 @@ class IncuversSerialSensor {
               // we didn't get a complete or sane string..
               if (this->ss->available() < minLen && prevReadAvailable) {
                 // there isn't another record in the queue and we have a previous record, let's use that.
+                #ifdef DEBUG_SERIAL
+                  Serial.print(F("\t\tb: "));
+                  Serial.println(currString);
+                #endif
                 currString = lastString;
                 stringComplete = true;
                 dataReadComplete = true;
               } else {
                 if (this->ss->available() < minLen) {
                   // there isn't another record in the queue but we don't have a previous record, so return a blank value
+                  #ifdef DEBUG_SERIAL
+                    Serial.print(F("\t\tf: "));
+                    Serial.println(currString);
+                  #endif
                   currString = "";
                   stringComplete = true;
                   dataReadComplete = true;
@@ -109,9 +130,6 @@ class IncuversSerialSensor {
       #endif
       return currString;
     }
-
-
-
 };
 
 boolean IsNumeric(String string) {

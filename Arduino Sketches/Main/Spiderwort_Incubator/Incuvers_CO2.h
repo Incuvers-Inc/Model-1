@@ -1,4 +1,4 @@
-#ifdef INCLUDE_LIGHT 
+#ifdef INCLUDE_CO2 
 #define CO2_STEP_THRESH 0.7
 #define CO2_MULTIPLIER 10.0
 #define CO2_DELTA_JUMP 3000

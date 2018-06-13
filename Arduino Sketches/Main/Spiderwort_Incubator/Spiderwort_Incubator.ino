@@ -44,18 +44,18 @@
 
 // Debugging definitions, comment out to disable
 //#define DEBUG_GENERAL true
-//#define DEBUG_SERIAL true
+#define DEBUG_SERIAL true
 //#define DEBUG_EEPROM true
 //#define DEBUG_UI true
-//#define DEBUG_CO2 true
+#define DEBUG_CO2 true
 //#define DEBUG_O2 true
 //#define DEBUG_TEMP true
 //#define DEBUG_LIGHT true
 //#define DEBUG_MEMORY true
 
 // Build-time options - comment out unneeded modules in order to save program space
-#define INCLUDE_O2 true
-//#define INCLUDE_CO2 true
+//#define INCLUDE_O2 true
+#define INCLUDE_CO2 true
 #define INCLUDE_TEMP true
 //#define INCLUDE_LIGHT true
 
