@@ -28,8 +28,48 @@ class IncuversUI {
         delay(MENU_UI_LOAD_DELAY);
       }
     }
+
+#ifdef INCLUDE_TRILINEUI
+//void LCDDrawNewUI() {
+void LCDDrawDefaultUI() {
     
-    void LCDDrawDualLineUI() {
+      /* 0123456789ABCDEF
+       * T.*+  CO2+   O2+
+       * 35.5  10.5  18.2
+       */
+
+      // TODO: Fix this UI display to support lighting.
+      lcd->setCursor(0, 0);
+      lcd->print("T.");
+      lcd->print(GetIndicator(incSet->isDoorOn(), incSet->isDoorStepping(), true, false));
+      lcd->print(GetIndicator(incSet->isChamberOn(), incSet->isChamberStepping(), false, false));
+      lcd->print("  CO2");
+      lcd->print(GetIndicator(incSet->isCO2Open(), incSet->isCO2Stepping(), false, false)); 
+      lcd->print("   O2");
+      lcd->print(GetIndicator(incSet->isO2Open(), incSet->isO2Stepping(), false, false)); 
+      
+      lcd->setCursor(0, 1);
+      if (incSet->getChamberTemperature() > 60.0 || incSet->getChamberTemperature() < -20.0) {
+        lcd->print(CentreStringForDisplay("err", 5));
+      } else {
+        lcd->print(CentreStringForDisplay(String(incSet->getChamberTemperature(), 1), 5));
+      }
+      if (incSet->getCO2Level() < 0) {
+        lcd->print(CentreStringForDisplay("err", 6));
+      } else {
+        lcd->print(CentreStringForDisplay(String(incSet->getCO2Level(), 1), 6));
+      }
+      if (incSet->getO2Level() < 0) {
+        lcd->print(CentreStringForDisplay("err", 5));
+      } else {
+        lcd->print(CentreStringForDisplay(String(incSet->getO2Level(), 1), 5));
+      }
+    }
+
+#else
+    //void LCDDrawDualLineUI() {
+    void LCDDrawDefaultUI() {
+    
       #ifdef DEBUG_UI
       Serial.print(F("UI::LCDDrawDualLineUI - "));
       #endif
@@ -109,41 +149,9 @@ class IncuversUI {
       Serial.println(F(""));
       #endif
     }
+#endif
     
-    void LCDDrawNewUI() {
-      /* 0123456789ABCDEF
-       * T.*+  CO2+   O2+
-       * 35.5  10.5  18.2
-       */
-
-      // TODO: Fix this UI display to support lighting.
-      lcd->setCursor(0, 0);
-      lcd->print("T.");
-      lcd->print(GetIndicator(incSet->isDoorOn(), incSet->isDoorStepping(), true, false));
-      lcd->print(GetIndicator(incSet->isChamberOn(), incSet->isChamberStepping(), false, false));
-      lcd->print("  CO2");
-      lcd->print(GetIndicator(incSet->isCO2Open(), incSet->isCO2Stepping(), false, false)); 
-      lcd->print("   O2");
-      lcd->print(GetIndicator(incSet->isO2Open(), incSet->isO2Stepping(), false, false)); 
-      
-      lcd->setCursor(0, 1);
-      if (incSet->getChamberTemperature() > 60.0 || incSet->getChamberTemperature() < -20.0) {
-        lcd->print(CentreStringForDisplay("err", 5));
-      } else {
-        lcd->print(CentreStringForDisplay(String(incSet->getChamberTemperature(), 1), 5));
-      }
-      if (incSet->getCO2Level() < 0) {
-        lcd->print(CentreStringForDisplay("err", 6));
-      } else {
-        lcd->print(CentreStringForDisplay(String(incSet->getCO2Level(), 1), 6));
-      }
-      if (incSet->getO2Level() < 0) {
-        lcd->print(CentreStringForDisplay("err", 5));
-      } else {
-        lcd->print(CentreStringForDisplay(String(incSet->getO2Level(), 1), 5));
-      }
-    }
-
+    
     void SerialPrintStatus() {
       Serial.print(ConvertMillisToReadable(millis()));
       Serial.print(F(" ID "));              // Identification
@@ -1020,15 +1028,6 @@ class IncuversUI {
       lcd->clear();
     }
   
-    void LCDDrawDefaultUI() {
-      if (incSet->getPersonalityCount() == 3) {
-        LCDDrawNewUI();
-      }
-      if (incSet->getPersonalityCount() < 3) {
-        LCDDrawDualLineUI();
-      }
-    }
-
     void EnterSetupMode() {
       incSet->MakeSafeState();
       SetupLoop();

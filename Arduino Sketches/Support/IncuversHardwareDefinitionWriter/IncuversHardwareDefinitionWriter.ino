@@ -95,13 +95,13 @@ void setup() {
   hardwareDefinition.CO2TxPin=3;              // Default: 3
   // Oxygen sensor
   hardwareDefinition.hasO2Sensor=true;        // Is there an O2 sensor present?
-  hardwareDefinition.O2RxPin=10;              // 
-  hardwareDefinition.O2TxPin=9;               // 
+  hardwareDefinition.O2RxPin=11;              // 
+  hardwareDefinition.O2TxPin=12;               // 
   // Gas Relay
   hardwareDefinition.firstGasRelay=true;      // Is there a gas valve present?
   hardwareDefinition.gasRelayPin = 7;         // Default: 7
-  hardwareDefinition.secondGasRelay=false;    // Is there a second gas valve present?
-  hardwareDefinition.gasRelayTwoPin = 0;      // 
+  hardwareDefinition.secondGasRelay=true;    // Is there a second gas valve present?
+  hardwareDefinition.gasRelayTwoPin = 13;      // 
   // Ethernet
   hardwareDefinition.ethernetSupport=false;   // Is there an ethernet shield installed?
   hardwareDefinition.ethernetPin = 0;         // Default: 10 (when an O2 sensor is not installed)

@@ -72,7 +72,9 @@ class IncuversSettingsHandler {
     IncuversLightingSystem* incLight;
     IncuversCO2System* incCO2;
     IncuversO2System* incO2;
-    
+
+    int gasPinsAvailable;
+    int gasPinsUsed;
     int personalityCount;
     
     int VerifyEEPROMHeader(int startAddress, boolean isHardware) {
@@ -198,6 +200,38 @@ class IncuversSettingsHandler {
       }
     }
 
+    void CountGasInterfaces() {
+      gasPinsAvailable = 0;
+      gasPinsUsed = 0;
+      if (settingsHardware.firstGasRelay) {
+        gasPinsAvailable++;
+      }
+
+      if (settingsHardware.secondGasRelay) {
+        gasPinsAvailable++;
+      }
+    }
+
+    int GetNextGasInterface() {
+      if (gasPinsAvailable > gasPinsUsed) {
+        switch (gasPinsUsed) {
+          case 0:
+            gasPinsUsed++;
+            return settingsHardware.gasRelayPin;
+            break;
+          case 1:
+            gasPinsUsed++;
+            return settingsHardware.gasRelayTwoPin;
+            break;
+          default:
+            return 0;
+            break;
+        }
+       
+      } else {
+        return 0;
+      }
+    }
     int ReadCurrentSettings() {
       #ifdef DEBUG_EEPROM
         Serial.println(F("ReadSettings"));
@@ -297,6 +331,7 @@ class IncuversSettingsHandler {
       
       if (ReadHardwareSettings()) {
         if (VerifyEEPROMHeader((int)SETTINGS_ADDRS, false) == SETTINGS_IDENT_CURR) {
+          CountGasInterfaces();
           runMode = ReadCurrentSettings();
         } else {
           runMode = 2;
@@ -370,7 +405,7 @@ class IncuversSettingsHandler {
       
       this->incCO2->SetupCO2(this->settingsHardware.CO2RxPin, 
                              this->settingsHardware.CO2TxPin,
-                             this->settingsHardware.gasRelayPin);
+                             GetNextGasInterface());
       this->incCO2->UpdateMode(this->settingsHolder.CO2Mode);                      
       this->incCO2->SetSetPoint(this->settingsHolder.CO2SetPoint);
     }
@@ -384,7 +419,7 @@ class IncuversSettingsHandler {
       
       this->incO2->SetupO2(this->settingsHardware.O2RxPin, 
                            this->settingsHardware.O2TxPin,
-                           this->settingsHardware.gasRelayPin);
+                           GetNextGasInterface());
       this->incO2->UpdateMode(this->settingsHolder.O2Mode);                      
       this->incO2->SetSetPoint(this->settingsHolder.O2SetPoint);
     }

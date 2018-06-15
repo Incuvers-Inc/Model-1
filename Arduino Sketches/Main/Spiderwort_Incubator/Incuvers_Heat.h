@@ -1,3 +1,4 @@
+#ifdef INCLUDE_HEAT
 #define TEMPERATURE_READING_DELTA 500
 #define TEMPERATURE_STEP_THRESH 0.998
 #define TEMPERATURE_STEP_LEN 2000
@@ -375,6 +376,74 @@ class IncuversHeatingSystem {
     }
 };
 
+#else
+
+class IncuversHeatingSystem {
+
+  public:
+    void SetupHeating(int doorPin, int chamberPin, int oneWirePin, byte doorSensorID[8], byte chamberSensorID[8], int heatMode, int fanPin, int fanMode) {
+      pinMode(doorPin, OUTPUT);  
+      pinMode(chamberPin,OUTPUT);      
+      digitalWrite(doorPin, LOW);     // Set LOW (heater off)
+      digitalWrite(chamberPin, LOW);  // Set LOW (heater off)
+
+      pinMode(fanPin, OUTPUT);
+      if (fanMode == 4) {
+        digitalWrite(fanPin, HIGH);       // Turn on the Fan  
+      } else {
+        digitalWrite(fanPin, LOW);        // Turn off the Fan
+      }
+    }
+  
+    void SetSetPoint(float tempSetPoint) {
+    }
+
+    void UpdateHeatMode(int mode) {
+    }
+
+    void UpdateFanMode(int mode) {
+    }
+  
+    void MakeSafeState() {
+    }
+  
+    void DoTick() {
+     
+    }
+
+    float getDoorTemperature() {
+      return -42;
+    }
+
+    boolean isDoorOn() {
+      return false;
+    }
+
+    boolean isDoorStepping() {
+      return false;
+    }
+
+    float getChamberTemperature() {
+      return -42;
+    }
+
+    boolean isChamberOn() {
+      return false;
+    }
+
+    boolean isChamberStepping() {
+      return false;
+    }
+
+    boolean isAlarmed() {
+      return false;
+    }
+
+    void ResetAlarms() {
+    }
+};
+
+#endif
 
 
 
