@@ -1,5 +1,5 @@
 // Hardware settings definitions
-#define HARDWARE_IDENT "M1b"
+#define HARDWARE_IDENT "M1c"
 #define HARDWARE_ADDRS 4 
 
 // Settings definitions
@@ -34,9 +34,10 @@ struct HardwareStruct {
   byte gasRelayPin;
   bool secondGasRelay;
   byte gasRelayTwoPin;
-  // Ethernet
-  bool ethernetSupport;
-  byte ethernetPin;
+  // PiLink
+  bool PiSupport;
+  byte PiRXPin;
+  byte PiTXPin;
   // Lighting
   bool lightingSupport;
   byte lightPin;

@@ -1,6 +1,6 @@
 // Hardware tag to ensure incorrect data is not read.
-// M1b = Model 1, release b
-#define HARDWARE_IDENT "M1b"
+// M1b = Model 1, release c
+#define HARDWARE_IDENT "M1c"
 #define HARDWARE_ADDRS 4 
 
 // Structure
@@ -26,9 +26,10 @@ struct HardwareStruct {
   byte gasRelayPin;
   bool secondGasRelay;
   byte gasRelayTwoPin;
-  // Ethernet
-  bool ethernetSupport;
-  byte ethernetPin;
+  // PiLink
+  bool PiSupport;
+  byte PiRXPin;
+  byte PiTXPin;
   // Lighting
   bool lightingSupport;
   byte lightPin;
@@ -60,6 +61,26 @@ LiquidTWI2 lcd(0);
  *    A4 - SDA (I2C) - Comms with MCP23017 I/O port expander  
  *    A5 - SCL (I2C) - Comms with MCP23017 I/O port expander 
  */
+/* ATMEGA 2560 Pins in use:
+ *    D2  - Opt0 Relay
+ *    D3  - Opt1 Relay
+ *    D4  - DS18B20 temperature sensors
+ *    D5  - Opt2 Relay
+ *    D6  - GAS1/CO2 Solenoid relay
+ *    D7  - GAS2/O2 Solenoid relay
+ *    D8  - Door Heater relay
+ *    D9  - Chamber Heater relay
+ *    D10 - Fan relay
+ *    D14 - O2 Sensor Tx
+ *    D15 - O2 Sensor Rx
+ *    D16 - CO2 Sensor Tx
+ *    D17 - CO2 Sesnor Rx
+ *    D18 - PiLink Tx
+ *    D19 - PiLink Rx
+ *    D20 - SDA (I2C) - Comms with MCP23017 I/O port expander  
+ *    D21 - SCL (I2C) - Comms with MCP23017 I/O port expander
+ */
+
 void setup() {
   Serial.begin(9600);
   sensors.begin();
@@ -77,10 +98,10 @@ void setup() {
   delay(1000);
   lcd.clear(); 
   
-  // Hardware version information.  0.9.3 is the PCB revision for Model 1
-  hardwareDefinition.hVer[0]=0;
-  hardwareDefinition.hVer[1]=9;
-  hardwareDefinition.hVer[2]=3;
+  // Hardware version information.  1.0.0 is the PCB revision for Model 1
+  hardwareDefinition.hVer[0]=1;
+  hardwareDefinition.hVer[1]=0;
+  hardwareDefinition.hVer[2]=0;
   // Hardware serial number
   hardwareDefinition.serial=666;             // Serial number as printed inside the top cover
   // Temperature sensors
@@ -91,23 +112,24 @@ void setup() {
   }
   // CO2 sensor
   hardwareDefinition.hasCO2Sensor=true;       // Is there a CO2 sensor present?
-  hardwareDefinition.CO2RxPin=2;              // Default: 2
-  hardwareDefinition.CO2TxPin=3;              // Default: 3
+  hardwareDefinition.CO2RxPin=17;             // Default: 17
+  hardwareDefinition.CO2TxPin=16;             // Default: 16
   // Oxygen sensor
   hardwareDefinition.hasO2Sensor=true;        // Is there an O2 sensor present?
-  hardwareDefinition.O2RxPin=11;              // 
-  hardwareDefinition.O2TxPin=12;               // 
+  hardwareDefinition.O2RxPin=15;              // Default: 15
+  hardwareDefinition.O2TxPin=14;              // Default: 14 
   // Gas Relay
   hardwareDefinition.firstGasRelay=true;      // Is there a gas valve present?
-  hardwareDefinition.gasRelayPin = 7;         // Default: 7
-  hardwareDefinition.secondGasRelay=true;    // Is there a second gas valve present?
-  hardwareDefinition.gasRelayTwoPin = 13;      // 
-  // Ethernet
-  hardwareDefinition.ethernetSupport=false;   // Is there an ethernet shield installed?
-  hardwareDefinition.ethernetPin = 0;         // Default: 10 (when an O2 sensor is not installed)
+  hardwareDefinition.gasRelayPin = 6;         // Default: 6
+  hardwareDefinition.secondGasRelay=true;     // Is there a second gas valve present?
+  hardwareDefinition.gasRelayTwoPin = 7;      // Default: 7
+  // PiLink
+  hardwareDefinition.piSupport=false;         // Is there a pi installed?
+  hardwareDefinition.piRxPin = 19;            // Default: 19
+  hardwareDefinition.piTxPin = 18;            // Default: 18
   // Lighting
   hardwareDefinition.lightingSupport = false; // Is there an internal lighting system?
-  hardwareDefinition.lightPin = 0;            // 
+  hardwareDefinition.lightPin = 2;            // Default: 2 
 }
 
 void loop() {

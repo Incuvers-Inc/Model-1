@@ -2,8 +2,8 @@
  * INCUVERS OPEN INCUBATOR (IOI)
  *    Date:    April 2018
  *    Software version: 1.10
- *    Hardware version: 0.9.3
- *    http://spiderwort.bio/   
+ *    Hardware version: 1.0.0
+ *    http://incuvers.com/   
  *    
  *    Incuvers team:
  *        Dr. Sebastian Hadjiantoniou
@@ -14,6 +14,7 @@
   * 
   * 1.10 - Added support for chamber lighting control.
   *      - Started making modules/skeletons to save on memory in Atmega328 implementations.
+  *      - Support for Atmega2560 / Incuvers Controller 1.0.0
   * 
   * 1.9 - Moved key configuration elements to hardware-specific settings store.
   *     - Rewrote the serial sensor monitoring systems.
@@ -62,9 +63,9 @@
 
 // Hardwired settings
 #define PINASSIGN_ONEWIRE_BUS 4
-#define PINASSIGN_HEATCHAMBER 5
-#define PINASSIGN_FAN 6
 #define PINASSIGN_HEATDOOR 8
+#define PINASSIGN_HEATCHAMBER 9
+#define PINASSIGN_FAN 10
 
 // Includes
 // OneWire and DallasTemperature libraries used for reading the heat sensors
