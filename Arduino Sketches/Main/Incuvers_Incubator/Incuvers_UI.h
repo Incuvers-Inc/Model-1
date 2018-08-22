@@ -570,8 +570,8 @@ class IncuversUI {
             if (incSet->HasLighting()) {
               hwSup = String(hwSup + F("L "));
             }
-            if (incSet->HasEthernet()) {
-              hwSup = String(hwSup + F("E "));
+            if (incSet->HasPiLink()) {
+              hwSup = String(hwSup + F("PL "));
             }
             lcd->setCursor(0, lineId);
             lcd->print(hwSup);
@@ -937,7 +937,7 @@ class IncuversUI {
       this->lcd->setCursor(0,0);
       this->lcd->print(F("Incuvers Model 1"));
       this->lcd->setCursor(0,1);
-      this->lcd->print(CentreStringForDisplay(F("V1.10"),16));
+      this->lcd->print(CentreStringForDisplay(F("V1.11"),16));
       delay(1000);
       this->lcd->clear();
   

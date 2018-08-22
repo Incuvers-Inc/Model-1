@@ -1,4 +1,4 @@
-#ifdef INCLUDE_O2
+#ifdef INCLUDE_O2_SERIAL
 #define OO_STEP_THRESH 1.01
 #define N_DELTA_JUMP 10000
 #define N_DELTA_STEPPING 250
@@ -29,6 +29,8 @@ class IncuversO2System {
     
     float level;
     float setPoint;
+    float temp;
+    int pressure;
     
     IncuversSerialSensor* iSS;
 
@@ -67,8 +69,8 @@ class IncuversO2System {
         //                                         T=temp in deg C         e=sensor errors
         //                                                        %=O2 concentration in %
         
-        reading = GetDecimalSensorReading('%', luminoxString, -1);
-    
+        reading = GetDecimalSensorReading('%', luminoxString, -100);
+        
         if (reading > 0 && reading < 30) {
           level = reading;  
           #ifdef DEBUG_O2
@@ -82,6 +84,24 @@ class IncuversO2System {
             Serial.println(i);
           #endif 
         }
+
+        reading = GetDecimalSensorReading('T', luminoxString, -100);
+        
+        if (reading > -40 && reading < 80) {
+          temp = reading;  
+          #ifdef DEBUG_O2
+            Serial.print("  O2 sensor detects temperature to be: ");
+            Serial.println(temp);
+          #endif
+          i = 5; // escape the loop.
+        } else {
+          #ifdef DEBUG_O2
+            Serial.print(F("\tO2 sensor returned invalid temperature reading"));
+            Serial.println(i);
+          #endif 
+        }
+
+        pressure = GetIntegerSensorReading('P', luminoxString, -100);
       }
     }
     
@@ -151,7 +171,7 @@ class IncuversO2System {
       level = -100;
       // Setup Serial Interface
       this->iSS = new IncuversSerialSensor();
-      this->iSS->Initialize(rxPin, txPin, true); 
+      this->iSS->Initialize(rxPin, txPin, "M 1", "A"); 
       
       //Setup the gas system
       this->pinAssignment_Valve = relayPin;
@@ -180,12 +200,6 @@ class IncuversO2System {
       this->on = false;
       this->stepping = false;
       this->started = false;
-    }
-
-    void DoMiniTick() {
-      if (this->enabled) {
-        this->iSS->StartListening();
-      }
     }
 
     void DoTick() {

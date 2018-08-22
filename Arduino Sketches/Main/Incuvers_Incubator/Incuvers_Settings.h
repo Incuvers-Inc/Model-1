@@ -1,9 +1,9 @@
 // Hardware settings definitions
-#define HARDWARE_IDENT "M1b"
+#define HARDWARE_IDENT "M1c"
 #define HARDWARE_ADDRS 4 
 
 // Settings definitions
-#define SETTINGS_IDENT_CURR 110
+#define SETTINGS_IDENT_CURR 111
 #define SETTINGS_ADDRS 64
 
 // Defaults
@@ -34,9 +34,10 @@ struct HardwareStruct {
   byte gasRelayPin;
   bool secondGasRelay;
   byte gasRelayTwoPin;
-  // Ethernet
-  bool ethernetSupport;
-  byte ethernetPin;
+    // PiLink
+  bool piSupport;
+  byte piRxPin;
+  byte piTxPin;
   // Lighting
   bool lightingSupport;
   byte lightPin;
@@ -186,9 +187,10 @@ class IncuversSettingsHandler {
         Serial.println(settingsHardware.gasRelayPin);
         Serial.println(settingsHardware.secondGasRelay);
         Serial.println(settingsHardware.gasRelayTwoPin);
-        // Ethernet
-        Serial.println(settingsHardware.ethernetSupport);
-        Serial.println(settingsHardware.ethernetPin);
+        // PiLink
+        Serial.println(settingsHardware.piSupport);
+        Serial.println(settingsHardware.piRxPin);
+        Serial.println(settingsHardware.piTxPin);
         // Lighting
         Serial.println(settingsHardware.lightingSupport);
         Serial.println(settingsHardware.lightPin);
@@ -248,7 +250,7 @@ class IncuversSettingsHandler {
       this->settingsHolder.CO2Mode = 2;
       this->settingsHolder.CO2SetPoint = CO2_DEF; 
       // O2 setup
-      this->settingsHolder.O2Mode = 0;
+      this->settingsHolder.O2Mode = 2;
       this->settingsHolder.O2SetPoint = OO_DEF; 
       // Lighting
       this->settingsHolder.lightMode = 0;
@@ -547,8 +549,8 @@ class IncuversSettingsHandler {
       return count;
     }
 
-    boolean HasEthernet() {
-      return settingsHardware.ethernetSupport;
+    boolean HasPiLink() {
+      return settingsHardware.piSupport;
     }
 
     boolean HasLighting() {

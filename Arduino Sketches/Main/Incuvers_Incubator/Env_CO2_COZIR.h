@@ -65,7 +65,7 @@ class IncuversCO2System {
         // The first number is the filtered value and the number after 
         // the 'z' is the raw value. We want the filtered value
     
-        reading = GetIntegerSensorReading('Z', cozirString, -1);
+        reading = GetIntegerSensorReading('Z', cozirString, -100);
     
         if (reading > 0 && reading < 300000) {
           level = (float)((CO2_MULTIPLIER * reading)/10000);  
@@ -152,7 +152,7 @@ class IncuversCO2System {
       level = -100;
       // Setup Serial Interface
       this->iSS = new IncuversSerialSensor();
-      this->iSS->Initialize(rxPin, txPin, true); 
+      this->iSS->Initialize(rxPin, txPin, "K 2", "Z"); 
       
       //Setup the gas system
       this->pinAssignment_Valve = relayPin;
@@ -181,12 +181,6 @@ class IncuversCO2System {
         this->on = false;
         this->stepping = false;
         this->started = false;
-      }
-    }
-
-    void DoMiniTick() {
-      if (this->enabled) {
-        this->iSS->StartListening();
       }
     }
 
