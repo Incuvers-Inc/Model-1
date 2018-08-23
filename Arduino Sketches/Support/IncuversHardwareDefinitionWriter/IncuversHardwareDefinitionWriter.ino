@@ -22,10 +22,10 @@ struct HardwareStruct {
   byte O2RxPin;
   byte O2TxPin;
   // Gas Relay
-  bool firstGasRelay;
-  byte gasRelayPin;
-  bool secondGasRelay;
-  byte gasRelayTwoPin;
+  bool CO2GasRelay;
+  byte CO2RelayPin;
+  bool O2GasRelay;
+  byte O2RelayPin;
   // PiLink
   bool piSupport;
   byte piRxPin;
@@ -94,7 +94,7 @@ void setup() {
   Wire.begin(); // wake up I2C bus
   Wire.beginTransmission(0x20);
   Wire.write(0x00); // IODIRA register
-  Wire.write(0x01); // set all of port A to inputs
+  Wire.write(0xFF); // set all of port A to inputs
   Wire.endTransmission(); 
   delay(1000);
   lcd.clear(); 
@@ -120,12 +120,12 @@ void setup() {
   hardwareDefinition.O2RxPin=15;              // Default: 15
   hardwareDefinition.O2TxPin=14;              // Default: 14 
   // Gas Relay
-  hardwareDefinition.firstGasRelay=true;      // Is there a gas valve present?
-  hardwareDefinition.gasRelayPin = 6;         // Default: 6
-  hardwareDefinition.secondGasRelay=true;     // Is there a second gas valve present?
-  hardwareDefinition.gasRelayTwoPin = 7;      // Default: 7
+  hardwareDefinition.CO2GasRelay=true;        // Is there a gas valve present for CO2 management?
+  hardwareDefinition.CO2RelayPin = 6;         // Default: 6
+  hardwareDefinition.O2GasRelay=true;         // Is there a gas valve present for O2 management?
+  hardwareDefinition.O2RelayPin = 7;          // Default: 7
   // PiLink
-  hardwareDefinition.piSupport=false;         // Is there a pi installed?
+  hardwareDefinition.piSupport=true;         // Is there a pi installed?
   hardwareDefinition.piRxPin = 19;            // Default: 19
   hardwareDefinition.piTxPin = 18;            // Default: 18
   // Lighting
@@ -261,6 +261,9 @@ int GetButtonState() {
     }  
   }
   
+  Serial.print(F("GetButtonState returning: "));
+  Serial.println(r);
+
   return r;
 }
 

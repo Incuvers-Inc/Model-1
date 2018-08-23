@@ -925,7 +925,7 @@ class IncuversUI {
       Wire.begin(); // wake up I2C bus
       Wire.beginTransmission(0x20);
       Wire.write(0x00); // IODIRA register
-      Wire.write(0xFF); // set first two lines of port A to input
+      Wire.write(0xFF); // set all of port A to input
       Wire.endTransmission();
     }
 

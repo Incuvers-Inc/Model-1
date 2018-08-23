@@ -29,11 +29,11 @@ struct HardwareStruct {
   bool hasO2Sensor;
   byte O2RxPin;
   byte O2TxPin;
-  // Gas Relay
-  bool firstGasRelay;
-  byte gasRelayPin;
-  bool secondGasRelay;
-  byte gasRelayTwoPin;
+  // Gas Relay(s)
+  bool CO2GasRelay;
+  byte CO2RelayPin;
+  bool O2GasRelay;
+  byte O2RelayPin;
     // PiLink
   bool piSupport;
   byte piRxPin;
@@ -372,7 +372,7 @@ class IncuversSettingsHandler {
       
       this->incCO2->SetupCO2(this->settingsHardware.CO2RxPin, 
                              this->settingsHardware.CO2TxPin,
-                             this->settingsHardware.gasRelayPin);
+                             this->settingsHardware.CO2RelayPin);
       this->incCO2->UpdateMode(this->settingsHolder.CO2Mode);                      
       this->incCO2->SetSetPoint(this->settingsHolder.CO2SetPoint);
     }
@@ -386,7 +386,7 @@ class IncuversSettingsHandler {
       
       this->incO2->SetupO2(this->settingsHardware.O2RxPin, 
                            this->settingsHardware.O2TxPin,
-                           this->settingsHardware.gasRelayPin);
+                           this->settingsHardware.O2RelayPin);
       this->incO2->UpdateMode(this->settingsHolder.O2Mode);                      
       this->incO2->SetSetPoint(this->settingsHolder.O2SetPoint);
     }
@@ -544,8 +544,8 @@ class IncuversSettingsHandler {
 
     int CountGasRelays() {
       int count = 0;
-      if (settingsHardware.firstGasRelay) { count++; }
-      if (settingsHardware.secondGasRelay) { count++; }
+      if (settingsHardware.CO2GasRelay) { count++; }
+      if (settingsHardware.O2GasRelay) { count++; }
       return count;
     }
 

@@ -60,8 +60,8 @@ class IncuversCO2System {
     
       for (int i = 0; i < 2; i++)
       {
-        cozirString = this->iSS->GetSerialSensorReading(10, 17);
-        // Data in the stream looks like "Z 00400 z 00360"
+        cozirString = this->iSS->GetSerialSensorReading(6, 10);
+        // Data in the stream looks like "Z 00400"
         // The first number is the filtered value and the number after 
         // the 'z' is the raw value. We want the filtered value
     
