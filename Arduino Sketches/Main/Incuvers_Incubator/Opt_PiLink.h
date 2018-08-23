@@ -19,9 +19,9 @@ class IncuversPiLink {
       Serial1.print(incSet->getSerial());
       // Heating/Fan system
       Serial1.print(F(" FM "));              // Fan, mode
-      Serial1.print(getFanMode());
+      Serial1.print(incSet->getFanMode());
       Serial1.print(F(" TM "));              // Temperature, mode
-      Serial1.print(getHeatMode());
+      Serial1.print(incSet->getHeatMode());
       Serial1.print(F(" TP "));              // Temperature, setpoint
       Serial1.print(incSet->getTemperatureSetPoint(), 2);
       Serial1.print(F(" TC "));              // Temperature, chamber

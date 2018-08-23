@@ -34,9 +34,11 @@ class IncuversSerialSensor {
       #ifdef DEBUG_SERIAL
         Serial.print(F("InitISS - modeSet, result: "));
       #endif
-      this->dC->println(modeSet);
-      while(!confirmed) {
-        delay(250);
+      this->dC->print(modeSet);
+      this->dC->print("\r\n");
+      
+      /*while(!confirmed) {
+        //delay(125);
         if (this->dC->available() > 0) {
            inChar = (char)this->dC->read();
            if (inChar != '\n' && inChar != '\r' ) {    
@@ -50,7 +52,7 @@ class IncuversSerialSensor {
             confirmed = true;   
            }
         }
-      }
+      }*/
 
       this->requestString = reqStr;
     }
@@ -86,14 +88,14 @@ class IncuversSerialSensor {
       
       while (!dataReadComplete) {
         #ifdef DEBUG_SERIAL
-          if (this->dC->available() > 0) {
+       /*   if (this->dC->available() > 0) {
             Serial.print(this->dC->available());
             Serial.println(F(" b avail prior to req, clearing Q"));
-          }
+          }*/
         #endif
 
         // clear the queue
-        while(this->dC->available()) {
+        /*while(this->dC->available()) {
           inChar = (char)this->dC->read();
           if (inChar != '\n' && inChar != '\r' ) {    
             inString += inChar;
@@ -105,7 +107,7 @@ class IncuversSerialSensor {
             #endif
             inString = "";
            }
-        }
+        }*/
 
         // request a reading
         this->dC->println(this->requestString);
@@ -118,8 +120,17 @@ class IncuversSerialSensor {
             }
             if (inChar == '\n') {
               stringComplete = true;   
+              #ifdef DEBUG_SERIAL
+                Serial.print(F("\tCompleted String: "));
+                Serial.println(inString);
+              #endif
             }
           }
+        }
+
+//clear queue
+        while(this->dC->available()) {
+          inChar = (char)this->dC->read();
         }
 
         if (i >= minLen && i <= maxLen) {
