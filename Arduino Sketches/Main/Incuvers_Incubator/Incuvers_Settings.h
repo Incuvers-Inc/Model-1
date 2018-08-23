@@ -254,8 +254,8 @@ class IncuversSettingsHandler {
       this->settingsHolder.O2SetPoint = OO_DEF; 
       // Lighting
       this->settingsHolder.lightMode = 0;
-      this->settingsHolder.millisOn =  50400000;  // 14 hrs = 50400000 milliseconds
-      this->settingsHolder.millisOff = 36000000;  // 10 hrs = 36000000 milliseconds
+      this->settingsHolder.millisOn =  60000;  // 14 hrs = 50400000 milliseconds
+      this->settingsHolder.millisOff = 30000;  // 10 hrs = 36000000 milliseconds
       // Alarm
       this->settingsHolder.alarmMode = 2;
       #ifdef DEBUG_EEPROM

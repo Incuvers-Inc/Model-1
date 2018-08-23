@@ -68,7 +68,7 @@
 //#define INCLUDE_O2_ANALOG true
 #define INCLUDE_CO2 true
 #define INCLUDE_TEMP true
-//#define INCLUDE_LIGHT true
+#define INCLUDE_LIGHT true
 #define INCLUDE_PILINK true
 
 // Hardwired settings
@@ -159,6 +159,7 @@ void setup() {
   iSettings->AttachIncuversModule(iO2);
 
   iPi = new IncuversPiLink();
+  iPi->SetupPiLink(iSettings);
   
   iUI->AttachSettings(iSettings);
   iUI->DisplayRunMode(runMode); 

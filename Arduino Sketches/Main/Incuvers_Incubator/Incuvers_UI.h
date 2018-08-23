@@ -1021,7 +1021,7 @@ class IncuversUI {
     }
   
     void LCDDrawDefaultUI() {
-      if (incSet->getPersonalityCount() == 3) {
+      if (incSet->getPersonalityCount() >= 3) {
         LCDDrawNewUI();
       }
       if (incSet->getPersonalityCount() < 3) {

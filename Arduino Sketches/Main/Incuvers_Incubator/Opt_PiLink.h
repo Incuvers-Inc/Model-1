@@ -7,6 +7,7 @@
 class IncuversPiLink {
   private:
     IncuversSettingsHandler* incSet;
+    bool isEnabled;
 
     void CheckForCommands() {
       
@@ -69,11 +70,16 @@ class IncuversPiLink {
   public:
     void SetupPiLink(IncuversSettingsHandler* iSettings) {
       this->incSet = iSettings;
+      if (this->incSet->HasPiLink()) {
+        Serial1.begin(9600, SERIAL_8E2);
+      }
     }
 
     void DoTick() {
-      CheckForCommands();
-      SendStatus();
+      if (this->incSet->HasPiLink()) {
+        CheckForCommands();
+        SendStatus();
+      }
     }
 
 };
