@@ -152,6 +152,8 @@ class IncuversUI {
       Serial.print(incSet->getChamberTemperature(), 2);
       Serial.print(F(" TD "));              // Temperature, door
       Serial.print(incSet->getDoorTemperature(), 2);
+      Serial.print(F(" TO "));              // Temperature, other
+      Serial.print(incSet->getOtherTemperature(), 2);
       Serial.print(F(" CO "));              // CO2 level reading
       Serial.print(incSet->getCO2Level(), 2);
       Serial.print(F(" OO "));              // O2 level reading

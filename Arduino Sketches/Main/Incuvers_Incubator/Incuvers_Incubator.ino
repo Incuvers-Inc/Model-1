@@ -17,6 +17,7 @@
   *      - Added support for Modbus-based or voltage-based luminox sensors.
   *      - Moved common environmental management code into its own class.
   *      - Moved to support Control Board 1.0.0 / ATMEGA 2560 controller.
+  *      - Added some power management features to limit the current draw.
   *      
   * 1.10 - Added support for chamber lighting control.
   *      - Started making modules/skeletons to save on memory in Atmega328 implementations.
@@ -52,13 +53,14 @@
 #define USE_2560 true
 
 // Debugging definitions, comment out to disable
-#define DEBUG_GENERAL true
-#define DEBUG_SERIAL true
+//#define DEBUG_GENERAL true
+//#define DEBUG_SERIAL true
 //#define DEBUG_EEPROM true
 //#define DEBUG_UI true
-#define DEBUG_CO2 true
-#define DEBUG_O2 true
-#define DEBUG_TEMP true
+#define DEBUG_EM true
+//#define DEBUG_CO2 true
+//#define DEBUG_O2 true
+//#define DEBUG_TEMP true
 //#define DEBUG_LIGHT true
 #define DEBUG_MEMORY true
 
@@ -93,6 +95,7 @@
 
 // Incuvers modules 
 #include "Incuvers_Common.h"
+#include "Incuvers_EnvironmentalManager.h"
 
 #ifdef INCLUDE_O2_MODBUS
  #include <ModbusMaster.h>

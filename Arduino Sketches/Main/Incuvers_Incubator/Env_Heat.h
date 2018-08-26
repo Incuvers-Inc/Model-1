@@ -1,42 +1,70 @@
-#define TEMPERATURE_READING_DELTA 500
-#define TEMPERATURE_STEP_THRESH 0.998
-#define TEMPERATURE_STEP_LEN 2000
-#define ALARM_THRESH 1.10
-#define ALARM_TEMP_ON_PERIOD 1800000
+#define TEMPERATURE_STEP_LEN 400
+#define TEMP_ALARM_THRESH 114.0
+#define TEMP_ALARM_ON_PERIOD 1800000
 
 class IncuversHeatingSystem {
   private:
-    int pinAssignment_Door;
-    int pinAssignment_Chamber;
     int pinAssignment_Fan;
     int pinAssignment_OneWire;
     int fanMode;
     
-    long lastTempCheck;
-    long tickTime;
-    long setPointTime;
-    long startDoorHeatAt;
-    long startChamberHeatAt;
-    long shutDoorHeatAt;
-    long shutChamberHeatAt;
-
-    boolean heatEnabled;
-    boolean heatOn_Door;
-    boolean stepping_Door;
-    boolean heatOn_Chamber;
-    boolean stepping_Chamber;
-    boolean alarmOver;
-    boolean alarmUnder;
-    
     float tempDoor;
     float tempChamber;
-    float setPoint;
+    float tempOther;
+
+    bool otherTempSensorPresent;
     
     byte sensorAddrDoorTemp[8];
     byte sensorAddrChamberTemp[8];
+    byte sensorAddrOtherTemp[8];
+    
+    IncuversEM EMHandleDoor;
+    IncuversEM EMHandleChamber;
     
     OneWire* oneWire;
     DallasTemperature* tempSensors;
+
+    bool AreSensorsSame(byte addrA[], byte addrB[]) {
+      bool result = true;
+      for (int i = 0; i < 8; i++) {
+        if (addrA[i] != addrB[i]) {
+          result = false;  
+        }
+      }
+      
+      return result;
+    }
+    
+    void CheckForOtherTempSonsors() {
+      int i, j, k;
+      byte addr[8];
+      bool allocated;
+      j=0;
+      k=0;
+      
+      this->otherTempSensorPresent = false;
+      
+      while(oneWire->search(addr)) {
+        if (!AreSensorsSame(addr, sensorAddrDoorTemp) && !AreSensorsSame(addr, sensorAddrChamberTemp)) {
+          for( i = 0; i < 8; i++) {
+            k++;
+            sensorAddrOtherTemp[i] = addr[i]; 
+            this->otherTempSensorPresent = true;
+          }
+        }
+        j++;
+      }
+
+      #ifdef DEBUG_TEMP
+        Serial.print(F("Heat::CFOTS - Found "));
+        Serial.print(j);
+        Serial.print(F(" sensors, "));
+        Serial.print(k);
+        Serial.println(F(" weren't allocated."));
+        Serial.println(F("\tAn address was added as the other temp sensor."));
+      #endif
+    }
+
     
     void GetTemperatureReadings() {
       #ifdef DEBUG_TEMP
@@ -44,7 +72,7 @@ class IncuversHeatingSystem {
       #endif
       boolean updateCompleted = false;
       int i = 0;
-      float tD, tC;
+      float tD, tC, tO;
       
       while (!updateCompleted) {
         // Request the temperatures
@@ -52,6 +80,9 @@ class IncuversHeatingSystem {
         // Record the values
         tD = this->tempSensors->getTempC(this->sensorAddrDoorTemp);
         tC = this->tempSensors->getTempC(this->sensorAddrChamberTemp);
+        if (this->otherTempSensorPresent) {
+          tO = this->tempSensors->getTempC(this->sensorAddrOtherTemp);
+        }
         
         #ifdef DEBUG_TEMP
           Serial.print(F("Door: "));
@@ -61,11 +92,15 @@ class IncuversHeatingSystem {
           Serial.println("*C");
         #endif  
 
-        if (tD > -40.0 && tD < 85.0 ) {
-          tempDoor = tD;
+        if (this->otherTempSensorPresent && tO > -40.0 && tO < 85.0 ) {
+          this->tempOther = tO;
         }
+        if (tD > -40.0 && tD < 85.0 ) {
+          this->tempDoor = tD;
+        }
+        
         if (tC > -40.0 && tC < 85.0 ) {
-          tempChamber = tC;
+          this->tempChamber = tC;
           updateCompleted = true;
         } else {
           i++;
@@ -81,145 +116,9 @@ class IncuversHeatingSystem {
       }
     }
   
-    void CheckSteppingStatus() {
-      #ifdef DEBUG_TEMP
-        Serial.println(F("Heat::CheckStep"));
-      #endif
-      if (this->heatOn_Chamber && this->stepping_Chamber) {
-        if (this->tickTime >= this->shutChamberHeatAt) {
-          digitalWrite(this->pinAssignment_Chamber, LOW);
-          #ifdef DEBUG_TEMP
-            Serial.print(F("Shut chamber "));
-            Serial.print((this->tickTime - this->shutChamberHeatAt));
-            Serial.println(F("ms late"));
-          #endif
-          this->heatOn_Chamber = false;
-          this->stepping_Chamber = false;
-        }
-      }
-  
-      if (this->heatOn_Door && this->stepping_Door) {
-        if (this->tickTime >= this->shutDoorHeatAt) {
-          digitalWrite(this->pinAssignment_Door, LOW);
-          #ifdef DEBUG_TEMP
-            Serial.print(F("Shut door "));
-            Serial.print((this->tickTime - this->shutDoorHeatAt));
-            Serial.println(F("ms late"));
-          #endif
-          this->heatOn_Door = false;
-          this->stepping_Door = false;
-        }
-      }
-    }
-
-    void CheckHeatMaintenance() {
-      // Chamber Temperature
-      if (tempChamber < setPoint && tempChamber > -40) {
-        if (tempChamber > (setPoint * TEMPERATURE_STEP_THRESH)) {
-          // stepping heat
-          if (heatOn_Chamber) {
-            // Already in stepping mode
-          } else {
-            // Stepping mode enabled!
-            digitalWrite(PINASSIGN_HEATCHAMBER, HIGH);
-            heatOn_Chamber = true;
-            stepping_Chamber = true;
-            shutChamberHeatAt = tickTime + TEMPERATURE_STEP_LEN;
-            #ifdef DEBUG_TEMP
-            Serial.println(F("Chamber step mode"));
-            #endif
-          }
-        } else {
-          // non-stepping heat
-          if (heatOn_Chamber) {
-            // already engaged, check for delta
-            if (shutChamberHeatAt < tickTime) {
-              //alarmUnder = true;
-            }
-          } else {
-            digitalWrite(PINASSIGN_HEATCHAMBER, HIGH);
-            heatOn_Chamber = true;
-            stepping_Chamber = false;
-            shutChamberHeatAt = tickTime + ALARM_TEMP_ON_PERIOD;
-            #ifdef DEBUG_TEMP
-            Serial.println(F("Chamber jump"));
-            #endif
-          }
-        }
-      } else {
-        // Chamber temp. is over setpoint.
-        if (heatOn_Chamber && !stepping_Chamber) {
-          // turn off the heater
-          digitalWrite(PINASSIGN_HEATCHAMBER, LOW);
-          heatOn_Chamber = false;
-          #ifdef DEBUG_TEMP
-          Serial.println(F("Chamber shutdown"));
-          #endif
-        }
-        if (tempChamber > (setPoint * ALARM_THRESH)) {
-          // Alarm
-          alarmOver = true;
-          #ifdef DEBUG_TEMP
-          Serial.println(F("Chamber over-temp alarm"));
-          #endif
-        }
-      }
-  
-      // Door Temperature
-      if (tempDoor < setPoint && tempDoor > -40) {
-        if (tempDoor > (setPoint * TEMPERATURE_STEP_THRESH)) {
-          // stepping heat
-          if (heatOn_Door) {
-            // Already in stepping mode
-          } else {
-            // Stepping mode enabled!
-            digitalWrite(PINASSIGN_HEATDOOR, HIGH);
-            heatOn_Door = true;
-            stepping_Door = true;
-            shutDoorHeatAt = tickTime + TEMPERATURE_STEP_LEN;
-            #ifdef DEBUG_TEMP
-            Serial.println(F("Door step mode"));
-            #endif
-          }
-        } else {
-          // non-stepping heat
-          if (heatOn_Door) {
-            // already engaged, check for delta
-            if (shutDoorHeatAt < tickTime) {
-              //alarmUnder = true;
-            }
-          } else {
-            digitalWrite(PINASSIGN_HEATDOOR, HIGH);
-            heatOn_Door = true;
-            stepping_Door = false;
-            shutDoorHeatAt = tickTime + ALARM_TEMP_ON_PERIOD;
-            #ifdef DEBUG_TEMP
-            Serial.println(F("Door jump mode"));
-            #endif
-          }
-        }
-      } else {
-        // Door temp. is over setpoint.
-        if (heatOn_Door && !stepping_Door) {
-          // turn off the heater
-          digitalWrite(PINASSIGN_HEATDOOR, LOW);
-          heatOn_Door = false;
-          #ifdef DEBUG_TEMP
-          Serial.println(F("Door shutdown"));
-          #endif
-        }
-        if (tempDoor > (setPoint * ALARM_THRESH)) {
-          // Alarm
-          alarmOver = true;
-          #ifdef DEBUG_TEMP
-          Serial.println(F("Door over-temp alarm"));
-          #endif
-        }
-      }
-    }
- 
+    
   public:
-    void SetupHeating(int doorPin, int chamberPin, int oneWirePin, byte doorSensorID[8], byte chamberSensorID[8], int heatMode, int fanPin, int fanMode) {
+    void SetupHeating(int doorPin, int chamberPin, int oneWirePin, byte doorSensorID[8], byte chamberSensorID[8], int heatMode, int fanPin, int fanMode, float tempSetPoint) {
       #ifdef DEBUG_TEMP
         Serial.println(F("Heat::Setup"));
         Serial.println(doorPin);
@@ -245,19 +144,26 @@ class IncuversHeatingSystem {
         Serial.println(fanPin);
         Serial.println(fanMode);
       #endif
-      
-      // Setup heaters 
-      this->pinAssignment_Door = doorPin;
-      this->pinAssignment_Chamber = chamberPin;
-      pinMode(this->pinAssignment_Chamber, OUTPUT);  
-      pinMode(this->pinAssignment_Door,OUTPUT);      
+
+      // Setup EMs
+      this->EMHandleChamber.SetupEM(char('C'), true, tempSetPoint, 0, chamberPin);
+      this->EMHandleChamber.SetupEM_Timing(false, TEMP_ALARM_ON_PERIOD, 90.0, true, false, TEMPERATURE_STEP_LEN, false, 0.0);
+      this->EMHandleChamber.setupEM_Alarms(true, TEMP_ALARM_THRESH, true, TEMP_ALARM_ON_PERIOD);
+      this->EMHandleDoor.SetupEM(char('D'), true, tempSetPoint, 0, doorPin);
+      this->EMHandleDoor.SetupEM_Timing(false, TEMP_ALARM_ON_PERIOD, 90.0, true, false, TEMPERATURE_STEP_LEN, false, 0.0);
+      this->EMHandleDoor.setupEM_Alarms(true, TEMP_ALARM_THRESH, true, TEMP_ALARM_ON_PERIOD);
+
+      // MakeSafe
       this->MakeSafeState();
       
       // Setup Temperature sensors
       this->pinAssignment_OneWire = oneWirePin;
       this->oneWire = new OneWire(PINASSIGN_ONEWIRE_BUS);       // Setup a oneWire instance to communicate with ANY OneWire devices
       this->tempSensors = new DallasTemperature(this->oneWire);          // Pass our oneWire reference to Dallas Temperature.
-  
+
+      this->CheckForOtherTempSonsors();
+      tempOther = -100;
+      
       // Starting the temperature sensors
       this->tempSensors->begin();
   
@@ -267,11 +173,13 @@ class IncuversHeatingSystem {
       }
   
       if (heatMode == 0) {
-        this->heatEnabled = false;
+        this->EMHandleDoor.Disable();
+        this->EMHandleChamber.Disable();
         tempDoor = -100;
         tempChamber = -100;
       } else {
-        this->heatEnabled = true;
+        this->EMHandleChamber.Enable();
+        this->EMHandleDoor.Enable();
       }
   
       // Setup fans
@@ -286,17 +194,19 @@ class IncuversHeatingSystem {
     }
   
     void SetSetPoint(float tempSetPoint) {
-      this->setPoint = tempSetPoint;
-      this->setPointTime = millis();
+      this->EMHandleDoor.UpdateDesiredLevel(tempSetPoint);
+      this->EMHandleChamber.UpdateDesiredLevel(tempSetPoint);
     }
 
     void UpdateHeatMode(int mode) {
       if (mode == 0) {
-        heatEnabled = false;
+        this->EMHandleDoor.Disable();
+        this->EMHandleChamber.Disable();
         tempDoor = -100;
         tempChamber = -100;
       } else {
-        this->heatEnabled = true;
+        this->EMHandleChamber.Enable();
+        this->EMHandleDoor.Enable();
       }
     }
 
@@ -313,40 +223,38 @@ class IncuversHeatingSystem {
       #ifdef DEBUG_TEMP
         Serial.println(F("Heat::SafeState"));
       #endif
-      digitalWrite(this->pinAssignment_Door, LOW);     // Set LOW (heater off)
-      digitalWrite(this->pinAssignment_Chamber, LOW);  // Set LOW (heater off)
-      this->heatOn_Door = false;
-      this->stepping_Door = false;
-      this->heatOn_Chamber = false;
-      this->stepping_Chamber = false;
-    }
-  
-    void DoTick() {
-      this->tickTime = millis();
-      
-      if (this->heatEnabled) {
-        if (this->stepping_Door || this->stepping_Chamber) {
-          this->CheckSteppingStatus();  
-        }
-      }
-  
-      if ((long)TEMPERATURE_READING_DELTA + this->lastTempCheck < this->tickTime) {
-        this->GetTemperatureReadings();
-      }
-  
-      CheckHeatMaintenance();
+      this->EMHandleDoor.Disable();
+      this->EMHandleChamber.Disable();
     }
 
+    void DoQuickTick() {
+      this->EMHandleChamber.DoQuickTick();
+      // Only doing Chamber as we are only Jolt-Ticking the door.
+      //this->EMHandleDoor.DoQuickTick();
+    }
+    
+    void DoTick() {
+      this->GetTemperatureReadings();
+      this->EMHandleChamber.DoUpdateTick(this->tempChamber);
+      if (!this->EMHandleChamber.isActive()) {
+        this->EMHandleDoor.DoJoltTick(this->tempDoor);
+      }
+    }
+
+    float getOtherTemperature() {
+      return tempOther;
+    }
+    
     float getDoorTemperature() {
       return tempDoor;
     }
 
     boolean isDoorOn() {
-      return heatOn_Door;
+      return this->EMHandleDoor.isActive();
     }
 
     boolean isDoorStepping() {
-      return stepping_Door;
+      return this->EMHandleDoor.isStepping();
     }
 
     float getChamberTemperature() {
@@ -354,15 +262,15 @@ class IncuversHeatingSystem {
     }
 
     boolean isChamberOn() {
-      return heatOn_Chamber;
+      return this->EMHandleChamber.isActive();
     }
 
     boolean isChamberStepping() {
-      return stepping_Chamber;
+      return this->EMHandleChamber.isStepping();
     }
 
     boolean isAlarmed() {
-      if (alarmOver || alarmUnder) {
+      if (this->EMHandleDoor.isAlarm_Overshoot() || this->EMHandleDoor.isAlarm_Undershoot() || this->EMHandleChamber.isAlarm_Overshoot() || this->EMHandleChamber.isAlarm_Undershoot()) {
         return true;
       } else {
         return false;
@@ -370,8 +278,7 @@ class IncuversHeatingSystem {
     }
 
     void ResetAlarms() {
-      alarmOver = false;
-      alarmUnder = false;
+      // Deprecated
     }
 };
 

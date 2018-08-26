@@ -347,8 +347,8 @@ class IncuversSettingsHandler {
                       this->settingsHardware.sensorAddrChamberTemp,
                       this->settingsHolder.heatMode,
                       PINASSIGN_FAN,
-                      this->settingsHolder.fanMode);
-      this->incHeat->SetSetPoint(this->settingsHolder.heatSetPoint);
+                      this->settingsHolder.fanMode,
+                      this->settingsHolder.heatSetPoint);
     }
 
     IncuversHeatingSystem* getHeatModule() {
@@ -419,6 +419,10 @@ class IncuversSettingsHandler {
     
     float getDoorTemperature() {
       return incHeat->getDoorTemperature();
+    }
+
+    float getOtherTemperature() {
+      return incHeat->getOtherTemperature();
     }
     
     boolean isDoorOn() {

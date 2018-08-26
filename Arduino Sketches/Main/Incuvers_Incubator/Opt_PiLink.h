@@ -29,6 +29,8 @@ class IncuversPiLink {
       Serial1.print(incSet->getChamberTemperature(), 2);
       Serial1.print(F(" TD "));              // Temperature, door
       Serial1.print(incSet->getDoorTemperature(), 2);
+      Serial1.print(F(" TO "));              // Temperature, other
+      Serial1.print(incSet->getOtherTemperature(), 2);
       Serial1.print(F(" TS "));              // Temperature, status
       Serial1.print(GetIndicator(incSet->isDoorOn(), incSet->isDoorStepping(), false, true));
       Serial1.print(GetIndicator(incSet->isChamberOn(), incSet->isChamberStepping(), false, true));
