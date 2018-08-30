@@ -1,4 +1,4 @@
-#define EM_BLOCKTHREADBELOWMS 750
+#define EM_BLOCKTHREADBELOWMS 650
 #define EM_MAXJUMPLEN 3600000
 
 class IncuversEM {
@@ -81,14 +81,21 @@ class IncuversEM {
 
   void CheckMaintenance() {
     long nowStamp = millis();
+    #ifdef DEBUG_EM 
+      Serial.print(F("CheckMaintenance (@"));
+      Serial.print(nowStamp);
+      Serial.print(F("ms @@ "));
+      Serial.print(this->percentageToDesired);
+      Serial.println(F("%)"));
+    #endif
     
-    if (this->percentageToDesired >= 100.0 && this->inWork) {
+    if (this->percentageToDesired >= 100.1 && this->activeWork) {
       digitalWrite(this->outputPin, LOW);
       this->inWork = false;
       this->activeWork = false;
       this->inStep = false;
-    } else if (this->percentageToDesired < 100.0) {
-      // we aren't at the desired level
+    } else if (this->percentageToDesired < 100.1) {
+      // we aren't at the desired level, or are just over so we give a little nudge to keep things where they should be.
       if (this->alarmSupressor) {
         // We had been supressing the alarms after a change, we don't need to do that anymore
         this->alarmSupressor = false;
@@ -157,10 +164,17 @@ class IncuversEM {
     }
 
     void Enable() {
+      #ifdef DEBUG_EM 
+        Serial.println(F("Enablement"));
+      #endif
+    
       this->activeManagement = true;
     }
 
     void Disable() {
+      #ifdef DEBUG_EM 
+        Serial.println(F("Disablement"));
+      #endif
       this->activeManagement = false;
       
       digitalWrite(this->outputPin, LOW);
@@ -169,6 +183,9 @@ class IncuversEM {
     }
 
     void UpdateDesiredLevel(float level) {
+      #ifdef DEBUG_EM 
+        Serial.println(F("UpdateLevel"));
+      #endif
       if (this->additiveElement) {
         if (level < this->desiredLevel) { 
           // Keep the lab a quiet environment by ensuring the alarm won't sound due to this change.
@@ -185,15 +202,20 @@ class IncuversEM {
     }
 
     void DoUpdateTick(float newLevel) {
+      #ifdef DEBUG_EM 
+        Serial.print(F("UpdateTick @ "));
+        Serial.print(newLevel);
+        Serial.println(F("!"));
+      #endif
       this->mostRecentLevel = newLevel;
 
       if (this->activeManagement) {
         this->DoQuickTick();
         
         if (this->additiveElement) {
-          this->percentageToDesired = this->mostRecentLevel / this->desiredLevel;
+          this->percentageToDesired = this->mostRecentLevel / this->desiredLevel * 100;
         } else {
-          this->percentageToDesired = (this->defaultLevel - this->mostRecentLevel) / (this->defaultLevel - this->desiredLevel);
+          this->percentageToDesired = (this->defaultLevel - this->mostRecentLevel) / (this->defaultLevel - this->desiredLevel) * 100;
         }
 
         this->CheckMaintenance();
@@ -203,7 +225,7 @@ class IncuversEM {
     void DoQuickTick() {
       long nowTime = millis();
       
-      if (this->activeManagement && this->inWork) {
+      if (this->activeManagement && this->activeWork) {
         if (this->scheduledWorkEnd <= nowTime) {
           digitalWrite(this->outputPin, LOW);
           #ifdef DEBUG_EM 
@@ -211,7 +233,7 @@ class IncuversEM {
             Serial.print(F(" :: Shut "));
             Serial.print(this->outputPin);
             Serial.print(F(" "));
-            Serial.print((this->scheduledWorkEnd - nowTime));
+            Serial.print((nowTime - this->scheduledWorkEnd));
             Serial.println(F("ms late"));
           #endif
           this->activeWork = false;

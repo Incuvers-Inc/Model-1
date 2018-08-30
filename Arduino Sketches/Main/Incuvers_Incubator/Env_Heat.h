@@ -1,4 +1,4 @@
-#define TEMPERATURE_STEP_LEN 400
+#define TEMPERATURE_STEP_LEN 600
 #define TEMP_ALARM_THRESH 114.0
 #define TEMP_ALARM_ON_PERIOD 1800000
 
@@ -27,6 +27,11 @@ class IncuversHeatingSystem {
     bool AreSensorsSame(byte addrA[], byte addrB[]) {
       bool result = true;
       for (int i = 0; i < 8; i++) {
+        #ifdef DEBUG_TEMP
+        Serial.print(addrA[i]);
+        Serial.print(" to ");
+        Serial.println(addrB[i]);
+        #endif
         if (addrA[i] != addrB[i]) {
           result = false;  
         }
@@ -45,9 +50,20 @@ class IncuversHeatingSystem {
       this->otherTempSensorPresent = false;
       
       while(oneWire->search(addr)) {
+        #ifdef DEBUG_TEMP
+        Serial.print(addr[0]);
+        Serial.print(addr[1]);
+        Serial.print(addr[2]);
+        Serial.print(addr[3]);
+        Serial.print(addr[4]);
+        Serial.print(addr[5]);
+        Serial.print(addr[6]);
+        Serial.print(addr[7]);
+        #endif
         if (!AreSensorsSame(addr, sensorAddrDoorTemp) && !AreSensorsSame(addr, sensorAddrChamberTemp)) {
+          Serial.println(" :: No match");
+          k++;
           for( i = 0; i < 8; i++) {
-            k++;
             sensorAddrOtherTemp[i] = addr[i]; 
             this->otherTempSensorPresent = true;
           }
@@ -151,10 +167,16 @@ class IncuversHeatingSystem {
       this->EMHandleChamber.setupEM_Alarms(true, TEMP_ALARM_THRESH, true, TEMP_ALARM_ON_PERIOD);
       this->EMHandleDoor.SetupEM(char('D'), true, tempSetPoint, 0, doorPin);
       this->EMHandleDoor.SetupEM_Timing(false, TEMP_ALARM_ON_PERIOD, 90.0, true, false, TEMPERATURE_STEP_LEN, false, 0.0);
-      this->EMHandleDoor.setupEM_Alarms(true, TEMP_ALARM_THRESH, true, TEMP_ALARM_ON_PERIOD);
+      this->EMHandleDoor.setupEM_Alarms(true, TEMP_ALARM_THRESH, true, RESET_AFTER_DELTA);  // We have a really long alarm period for the door as we aren't as concerned if it never reaches its destination temperature
+      
 
       // MakeSafe
       this->MakeSafeState();
+
+      for (int i = 0; i < 8; i++) {
+        this->sensorAddrDoorTemp[i] = doorSensorID[i];
+        this->sensorAddrChamberTemp[i] = chamberSensorID[i];
+      }
       
       // Setup Temperature sensors
       this->pinAssignment_OneWire = oneWirePin;
@@ -166,12 +188,7 @@ class IncuversHeatingSystem {
       
       // Starting the temperature sensors
       this->tempSensors->begin();
-  
-      for (int i = 0; i < 8; i++) {
-        this->sensorAddrDoorTemp[i] = doorSensorID[i];
-        this->sensorAddrChamberTemp[i] = chamberSensorID[i];
-      }
-  
+    
       if (heatMode == 0) {
         this->EMHandleDoor.Disable();
         this->EMHandleChamber.Disable();
