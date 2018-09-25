@@ -57,7 +57,7 @@
 //#define DEBUG_SERIAL true
 //#define DEBUG_EEPROM true
 //#define DEBUG_UI true
-//#define DEBUG_EM true
+#define DEBUG_EM true
 //#define DEBUG_CO2 true
 //#define DEBUG_O2 true
 //#define DEBUG_TEMP true

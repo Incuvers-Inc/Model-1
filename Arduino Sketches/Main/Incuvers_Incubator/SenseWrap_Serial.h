@@ -62,7 +62,7 @@ class IncuversSerialSensor {
       this->dC->print(this->setupString);
       this->dC->print("\r\n");
       
-      while(!confirmed || escapeAfter < millis()) {
+      while(!confirmed && escapeAfter > millis()) {
         if (this->dC->available() > 0) {
            inChar = (char)this->dC->read();
            if (inChar != '\n' && inChar != '\r' ) {    

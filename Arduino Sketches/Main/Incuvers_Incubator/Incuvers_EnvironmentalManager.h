@@ -90,6 +90,9 @@ class IncuversEM {
     #endif
     
     if (this->percentageToDesired >= 100.1 && this->activeWork) {
+      #ifdef DEBUG_EM 
+        Serial.println(F("  C: We are over 100% to our target, shutdown time"));
+      #endif
       digitalWrite(this->outputPin, LOW);
       this->inWork = false;
       this->activeWork = false;
@@ -105,15 +108,24 @@ class IncuversEM {
         // We either aren't already doing anything and we aren't waiting on a bleed or we are not in step mode but in step territory so should start a stepping cycle.
         if (this->useStepping && this->percentageToDesired > this->jumpPercentageLimit) {
           // Stepping mode
+          #ifdef DEBUG_EM 
+            Serial.println(F("  C: We are not at our target, but close, stepping!"));
+          #endif
           if (this->flatStepping) {
             this->DoStep(this->steppingDelta);
           } else {
             this->DoStep(this->CalculateExponentialStepLength());
           }
+          this->inWork = true;
+          this->activeWork = true;
+          this->inStep = true;
         } else {
           digitalWrite(this->outputPin, HIGH);
           this->startedWorkAt = millis();
           if (this->useJumpLength) {
+            #ifdef DEBUG_EM 
+              Serial.println(F("  C: We are starting a new jump"));
+            #endif
             this->scheduledWorkEnd = this->startedWorkAt + this->jumpDelta;
           } else {
             this->scheduledWorkEnd = this->startedWorkAt + EM_MAXJUMPLEN;
@@ -122,6 +134,10 @@ class IncuversEM {
           this->activeWork = true;
           this->inStep = false;          
         }
+      } else {
+        #ifdef DEBUG_EM 
+          Serial.println(F("  C: I'm bleeding! (or busy)"));
+        #endif
       }
     }
   }
