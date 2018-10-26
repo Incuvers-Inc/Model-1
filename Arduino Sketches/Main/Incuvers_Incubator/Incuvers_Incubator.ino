@@ -1,6 +1,6 @@
 /*
  * INCUVERS INCUBATOR 
- *    Date:    August 2018
+ *    Date:    October 2018
  *    Software version: 1.11
  *    Hardware version: 1.0.0
  *    http://incuvers.com/   

@@ -165,10 +165,10 @@ class IncuversHeatingSystem {
 
       // Setup EMs
       this->EMHandleChamber.SetupEM(char('C'), true, tempSetPoint, 0, chamberPin);
-      this->EMHandleChamber.SetupEM_Timing(true, TEMPERATURE_JUMP_LEN, 90.0, true, false, TEMPERATURE_STEP_LEN, true, TEMPERATURE_JUMP_WT);
+      this->EMHandleChamber.SetupEM_Timing(false, TEMP_ALARM_ON_PERIOD, 90.0, true, false, TEMPERATURE_STEP_LEN, false, 0.0);
       this->EMHandleChamber.setupEM_Alarms(true, TEMP_ALARM_THRESH, true, TEMP_ALARM_ON_PERIOD);
       this->EMHandleDoor.SetupEM(char('D'), true, tempSetPoint, 0, doorPin);
-      this->EMHandleDoor.SetupEM_Timing(true, TEMPERATURE_JUMP_LEN, 90.0, true, false, TEMPERATURE_STEP_LEN, true, TEMPERATURE_JUMP_WT);
+      this->EMHandleDoor.SetupEM_Timing(false, TEMP_ALARM_ON_PERIOD, 90.0, true, false, TEMPERATURE_STEP_LEN, false, 0.0);
       this->EMHandleDoor.setupEM_Alarms(true, TEMP_ALARM_THRESH, true, RESET_AFTER_DELTA);  // We have a really long alarm period for the door as we aren't as concerned if it never reaches its destination temperature
       
 
