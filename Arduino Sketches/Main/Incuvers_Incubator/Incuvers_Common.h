@@ -6,13 +6,11 @@ String PadToWidth(int source, int intSize) {
   }
 }
 
-#ifdef DEBUG_MEMORY
-  int freeMemory() {
-    extern int __heap_start, *__brkval; 
-    int v; 
-    return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
-  }
-#endif
+int freeMemory() {
+  extern int __heap_start, *__brkval; 
+  int v; 
+  return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
+}
 
 String ConvertMillisToScaledReadable(long totalMillisCount, int maxLen, bool includeMillis) {
   long runningAmount;
@@ -97,4 +95,3 @@ char GetIndicator(boolean enabled, boolean stepping, boolean altSymbol, boolean 
 
   return r;
 }
-

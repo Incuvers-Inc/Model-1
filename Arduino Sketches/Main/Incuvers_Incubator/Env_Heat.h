@@ -1,8 +1,8 @@
-#define TEMPERATURE_STEP_LEN 600
+#define TEMPERATURE_STEP_LEN 1200
 #define TEMPERATURE_JUMP_LEN 60000
 #define TEMPERATURE_JUMP_WT 60000
 #define TEMP_ALARM_THRESH 114.0
-#define TEMP_ALARM_ON_PERIOD 1800000
+#define TEMP_ALARM_ON_PERIOD 7200000
 
 class IncuversHeatingSystem {
   private:
@@ -249,15 +249,16 @@ class IncuversHeatingSystem {
     void DoQuickTick() {
       this->EMHandleChamber.DoQuickTick();
       // Only doing Chamber as we are only Jolt-Ticking the door.
-      //this->EMHandleDoor.DoQuickTick();
+      this->EMHandleDoor.DoQuickTick();
     }
     
     void DoTick() {
       this->GetTemperatureReadings();
       this->EMHandleChamber.DoUpdateTick(this->tempChamber);
-      if (!this->EMHandleChamber.isActive()) {
-        this->EMHandleDoor.DoJoltTick(this->tempDoor);
-      }
+      this->EMHandleDoor.DoUpdateTick(this->tempDoor);
+      //if (!this->EMHandleChamber.isActive()) {
+        //this->EMHandleDoor.DoJoltTick(this->tempDoor);
+      //}
     }
 
     float getOtherTemperature() {
@@ -300,9 +301,3 @@ class IncuversHeatingSystem {
       // Deprecated
     }
 };
-
-
-
-
-
-

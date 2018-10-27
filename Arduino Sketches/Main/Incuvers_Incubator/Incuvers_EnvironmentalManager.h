@@ -135,9 +135,17 @@ class IncuversEM {
           this->inStep = false;          
         }
       } else {
-        #ifdef DEBUG_EM 
-          Serial.println(F("  C: I'm bleeding! (or busy)"));
-        #endif
+        if (this->activeWork && !this->inStep && !this->useBleeding) {
+          // we are jumping, re-enable, just in case
+          #ifdef DEBUG_EM 
+            Serial.println(F("  C: I'm jumping, but making sure"));
+          #endif
+          digitalWrite(this->outputPin, HIGH);
+        } else {
+          #ifdef DEBUG_EM 
+            Serial.println(F("  C: I'm bleeding or busy jumping"));
+          #endif
+        }
       }
     }
   }
