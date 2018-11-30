@@ -1,6 +1,6 @@
 /*
  * INCUVERS INCUBATOR 
- *    Date:    August 2018
+ *    Date:    October 2018
  *    Software version: 1.11
  *    Hardware version: 1.0.0
  *    http://incuvers.com/   
@@ -62,7 +62,7 @@
 //#define DEBUG_O2 true
 //#define DEBUG_TEMP true
 //#define DEBUG_LIGHT true
-#define DEBUG_MEMORY true
+//#define DEBUG_MEMORY true
 
 // Build/upload-time options - comment out unneeded modules in order to save program space.  Please only ensure only one O2 module is included at any given time.
 #define INCLUDE_O2_SERIAL true
@@ -192,4 +192,3 @@ void loop() {
   iUI->DoTick(); 
   iPi->DoTick();
 }
-

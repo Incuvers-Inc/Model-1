@@ -129,7 +129,7 @@ void setup() {
   hardwareDefinition.piRxPin = 19;            // Default: 19
   hardwareDefinition.piTxPin = 18;            // Default: 18
   // Lighting
-  hardwareDefinition.lightingSupport = true; // Is there an internal lighting system?
+  hardwareDefinition.lightingSupport = false; // Is there an internal lighting system?
   hardwareDefinition.lightPin = 2;            // Default: 2 
 }
 
