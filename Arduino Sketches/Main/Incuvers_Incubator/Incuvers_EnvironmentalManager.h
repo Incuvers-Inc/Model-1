@@ -92,7 +92,7 @@ class IncuversEM {
     if (this->percentageToDesired >= 100.1 && this->activeWork) {
       #ifdef DEBUG_EM
         Serial.print(F("  "));
-        Serial.print(F(this.ident));
+        Serial.print((this->ident));
         Serial.println(F(": We are over 100% to our target, shutdown time"));
 
       #endif
@@ -113,7 +113,7 @@ class IncuversEM {
           // Stepping mode
           #ifdef DEBUG_EM
             Serial.print(F("  "));
-            Serial.print(F(this.ident));
+            Serial.print((this->ident));
             Serial.println(F(": We are not at our target, but close, stepping!"));
           #endif
           if (this->flatStepping) {
@@ -130,7 +130,7 @@ class IncuversEM {
           if (this->useJumpLength) {
             #ifdef DEBUG_EM
               Serial.print(F("  "));
-              Serial.print(F(this.ident));
+              Serial.print((this->ident));
               Serial.println(F(": We are starting a new jump"));
             #endif
             this->scheduledWorkEnd = this->startedWorkAt + this->jumpDelta;
@@ -146,14 +146,14 @@ class IncuversEM {
           // we are jumping, re-enable, just in case
           #ifdef DEBUG_EM 
             Serial.print(F("  "));
-            Serial.print(F(this.ident));
+            Serial.print((this->ident));
             Serial.println(F("  C: I'm jumping, but making sure"));
           #endif
           digitalWrite(this->outputPin, HIGH);
         } else {
           #ifdef DEBUG_EM 
             Serial.print(F("  "));
-            Serial.print(F(this.ident));
+            Serial.print((this->ident));
             Serial.println(F(": I'm bleeding or busy jumping"));
           #endif
         }
