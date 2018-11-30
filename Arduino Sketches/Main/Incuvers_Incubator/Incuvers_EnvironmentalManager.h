@@ -147,7 +147,7 @@ class IncuversEM {
           #ifdef DEBUG_EM 
             Serial.print(F("  "));
             Serial.print((this->ident));
-            Serial.println(F("  C: I'm jumping, but making sure"));
+            Serial.println(F(": I'm jumping, but making sure"));
           #endif
           digitalWrite(this->outputPin, HIGH);
         } else {
