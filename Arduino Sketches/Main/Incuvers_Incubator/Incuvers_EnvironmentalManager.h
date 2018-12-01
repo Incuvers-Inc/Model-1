@@ -4,12 +4,12 @@
 class IncuversEM {
   private:
     char ident;                     // Character to identify EM Instance in Debugging output.
-    
+
     boolean additiveElement;        // Are we trying to go up to the desired level (versus down to it)
     float desiredLevel;             // What level we are trying to reach
     float defaultLevel;             // What is the default level we are trying to get from (used only when descending)
     int outputPin;                  // Where to send a signal to help get to the desired level
-    
+
     boolean activeManagement;       // Is this Environmental Manager active?
 
     float mostRecentLevel;          // What level we are currently at
@@ -28,18 +28,18 @@ class IncuversEM {
     long steppingDelta;             // What is the base length of time to use when stepping (used for flat or base number for exponential)
     boolean useBleeding;            // After completing a bit of work, wait before starting another bit of work?
     long bleedDelta;                // How long to wait before starting another bit of work.
-    
+
     // alarm items
     boolean alarmOnOvershoot;       // Raise alarm if we go past our desired level
     float overshootAlarmLevel;      // At what level does the alarm sound?
     boolean alarmOnUndershoot;      // Raise alarm if we don't reach our desired level in a timely time
     long undershootAlarmDelta;      // At what time does this alarm sound?
     boolean alarmSupressor;         // Flag to supress alarm if a desiredLevel has been changed.
-    
+
 
   void DoStep(long len) {
     long now = millis();
-    
+
     if (len <= EM_BLOCKTHREADBELOWMS) {
       // We are in the stepping range and intend to step for shorter than a cycle
       digitalWrite(this->outputPin, HIGH);
@@ -65,7 +65,7 @@ class IncuversEM {
     float fullLen = expMult * expMult * this->steppingDelta;
     long len = (long)fullLen;
 
-    #ifdef DEBUG_EM 
+    #ifdef DEBUG_EM
       Serial.print(this->ident);
       Serial.print(F(" :: CalcExpStpLen "));
       Serial.print(len);
@@ -75,23 +75,26 @@ class IncuversEM {
       Serial.print(this->steppingDelta);
       Serial.println(F("ms)"));
     #endif
-    
+
     return len;
   }
 
   void CheckMaintenance() {
     long nowStamp = millis();
-    #ifdef DEBUG_EM 
+    #ifdef DEBUG_EM
       Serial.print(F("CheckMaintenance (@"));
       Serial.print(nowStamp);
       Serial.print(F("ms @@ "));
       Serial.print(this->percentageToDesired);
       Serial.println(F("%)"));
     #endif
-    
+
     if (this->percentageToDesired >= 100.1 && this->activeWork) {
-      #ifdef DEBUG_EM 
-        Serial.println(F("  C: We are over 100% to our target, shutdown time"));
+      #ifdef DEBUG_EM
+        Serial.print(F("  "));
+        Serial.print((this->ident));
+        Serial.println(F(": We are over 100% to our target, shutdown time"));
+
       #endif
       digitalWrite(this->outputPin, LOW);
       this->inWork = false;
@@ -108,8 +111,10 @@ class IncuversEM {
         // We either aren't already doing anything and we aren't waiting on a bleed or we are not in step mode but in step territory so should start a stepping cycle.
         if (this->useStepping && this->percentageToDesired > this->jumpPercentageLimit) {
           // Stepping mode
-          #ifdef DEBUG_EM 
-            Serial.println(F("  C: We are not at our target, but close, stepping!"));
+          #ifdef DEBUG_EM
+            Serial.print(F("  "));
+            Serial.print((this->ident));
+            Serial.println(F(": We are not at our target, but close, stepping!"));
           #endif
           if (this->flatStepping) {
             this->DoStep(this->steppingDelta);
@@ -123,8 +128,10 @@ class IncuversEM {
           digitalWrite(this->outputPin, HIGH);
           this->startedWorkAt = millis();
           if (this->useJumpLength) {
-            #ifdef DEBUG_EM 
-              Serial.println(F("  C: We are starting a new jump"));
+            #ifdef DEBUG_EM
+              Serial.print(F("  "));
+              Serial.print((this->ident));
+              Serial.println(F(": We are starting a new jump"));
             #endif
             this->scheduledWorkEnd = this->startedWorkAt + this->jumpDelta;
           } else {
@@ -132,18 +139,22 @@ class IncuversEM {
           }
           this->inWork = true;
           this->activeWork = true;
-          this->inStep = false;          
+          this->inStep = false;
         }
       } else {
         if (this->activeWork && !this->inStep && !this->useBleeding) {
           // we are jumping, re-enable, just in case
           #ifdef DEBUG_EM 
-            Serial.println(F("  C: I'm jumping, but making sure"));
+            Serial.print(F("  "));
+            Serial.print((this->ident));
+            Serial.println(F(": I'm jumping, but making sure"));
           #endif
           digitalWrite(this->outputPin, HIGH);
         } else {
           #ifdef DEBUG_EM 
-            Serial.println(F("  C: I'm bleeding or busy jumping"));
+            Serial.print(F("  "));
+            Serial.print((this->ident));
+            Serial.println(F(": I'm bleeding or busy jumping"));
           #endif
         }
       }
@@ -158,9 +169,9 @@ class IncuversEM {
       this->defaultLevel = def;
       this->outputPin = pin;
 
-      pinMode(this->outputPin, OUTPUT); 
-      digitalWrite(this->outputPin, LOW); 
-      
+      pinMode(this->outputPin, OUTPUT);
+      digitalWrite(this->outputPin, LOW);
+
       this->activeManagement = false;
       this->mostRecentLevel = -100;
       this->inWork = false;
@@ -188,45 +199,45 @@ class IncuversEM {
     }
 
     void Enable() {
-      #ifdef DEBUG_EM 
+      #ifdef DEBUG_EM
         Serial.println(F("Enablement"));
       #endif
-    
+
       this->activeManagement = true;
     }
 
     void Disable() {
-      #ifdef DEBUG_EM 
+      #ifdef DEBUG_EM
         Serial.println(F("Disablement"));
       #endif
       this->activeManagement = false;
-      
+
       digitalWrite(this->outputPin, LOW);
       this->inWork = false;
       this->inStep = false;
     }
 
     void UpdateDesiredLevel(float level) {
-      #ifdef DEBUG_EM 
+      #ifdef DEBUG_EM
         Serial.println(F("UpdateLevel"));
       #endif
       if (this->additiveElement) {
-        if (level < this->desiredLevel) { 
+        if (level < this->desiredLevel) {
           // Keep the lab a quiet environment by ensuring the alarm won't sound due to this change.
           this->alarmSupressor = true;
         }
       } else {
-        if (level > this->desiredLevel) { 
+        if (level > this->desiredLevel) {
           // Keep the lab a quiet environment by ensuring the alarm won't sound due to this change.
           this->alarmSupressor = true;
         }
       }
-      
+
       this->desiredLevel = level;
     }
 
     void DoUpdateTick(float newLevel) {
-      #ifdef DEBUG_EM 
+      #ifdef DEBUG_EM
         Serial.print(F("UpdateTick @ "));
         Serial.print(newLevel);
         Serial.println(F("!"));
@@ -235,7 +246,7 @@ class IncuversEM {
 
       if (this->activeManagement) {
         this->DoQuickTick();
-        
+
         if (this->additiveElement) {
           this->percentageToDesired = this->mostRecentLevel / this->desiredLevel * 100;
         } else {
@@ -248,11 +259,11 @@ class IncuversEM {
 
     void DoQuickTick() {
       long nowTime = millis();
-      
+
       if (this->activeManagement && this->activeWork) {
         if (this->scheduledWorkEnd <= nowTime) {
           digitalWrite(this->outputPin, LOW);
-          #ifdef DEBUG_EM 
+          #ifdef DEBUG_EM
             Serial.print(this->ident);
             Serial.print(F(" :: Shut "));
             Serial.print(this->outputPin);
@@ -261,7 +272,7 @@ class IncuversEM {
             Serial.println(F("ms late"));
           #endif
           this->activeWork = false;
-        } 
+        }
       }
     }
 
@@ -301,7 +312,7 @@ class IncuversEM {
         return false;
       }
     }
-    
+
     bool isActive() {
       return this->activeWork;
     }
