@@ -94,12 +94,14 @@ class IncuversEM {
         Serial.print(F("  "));
         Serial.print((this->ident));
         Serial.println(F(": We are over 100% to our target, shutdown time"));
-
       #endif
       digitalWrite(this->outputPin, LOW);
       this->inWork = false;
       this->activeWork = false;
       this->inStep = false;
+      // turn off undershoot, we clearly reached the desired temp.
+      this->alarmOnUndershoot = false;
+
     } else if (this->percentageToDesired < 100.1) {
       // we aren't at the desired level, or are just over so we give a little nudge to keep things where they should be.
       if (this->alarmSupressor) {
@@ -124,6 +126,8 @@ class IncuversEM {
           this->inWork = true;
           this->activeWork = true;
           this->inStep = true;
+          // turn off undershoot alarm, we are close enough to the desired temp.
+          this->alarmOnUndershoot = false;
         } else {
           digitalWrite(this->outputPin, HIGH);
           this->startedWorkAt = millis();
@@ -144,14 +148,14 @@ class IncuversEM {
       } else {
         if (this->activeWork && !this->inStep && !this->useBleeding) {
           // we are jumping, re-enable, just in case
-          #ifdef DEBUG_EM 
+          #ifdef DEBUG_EM
             Serial.print(F("  "));
             Serial.print((this->ident));
             Serial.println(F(": I'm jumping, but making sure"));
           #endif
           digitalWrite(this->outputPin, HIGH);
         } else {
-          #ifdef DEBUG_EM 
+          #ifdef DEBUG_EM
             Serial.print(F("  "));
             Serial.print((this->ident));
             Serial.println(F(": I'm bleeding or busy jumping"));
