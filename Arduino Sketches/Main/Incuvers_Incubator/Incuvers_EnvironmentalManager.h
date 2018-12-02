@@ -127,7 +127,6 @@ class IncuversEM {
           this->startedWorkAt = millis();
         } else {
           digitalWrite(this->outputPin, HIGH);
-          this->startedWorkAt = millis();
           if (this->useJumpLength) {
             #ifdef DEBUG_EM
               Serial.print(F("  "));
@@ -141,6 +140,7 @@ class IncuversEM {
           this->inWork = true;
           this->activeWork = true;
           this->inStep = false;
+          this->startedWorkAt = millis();
         }
       } else {
         if (this->activeWork && !this->inStep && !this->useBleeding) {
