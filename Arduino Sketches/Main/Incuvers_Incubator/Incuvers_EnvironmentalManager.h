@@ -124,9 +124,9 @@ class IncuversEM {
           this->inWork = true;
           this->activeWork = true;
           this->inStep = true;
+          this->startedWorkAt = millis();
         } else {
           digitalWrite(this->outputPin, HIGH);
-          this->startedWorkAt = millis();
           if (this->useJumpLength) {
             #ifdef DEBUG_EM
               Serial.print(F("  "));
@@ -140,18 +140,19 @@ class IncuversEM {
           this->inWork = true;
           this->activeWork = true;
           this->inStep = false;
+          this->startedWorkAt = millis();
         }
       } else {
         if (this->activeWork && !this->inStep && !this->useBleeding) {
           // we are jumping, re-enable, just in case
-          #ifdef DEBUG_EM 
+          #ifdef DEBUG_EM
             Serial.print(F("  "));
             Serial.print((this->ident));
             Serial.println(F(": I'm jumping, but making sure"));
           #endif
           digitalWrite(this->outputPin, HIGH);
         } else {
-          #ifdef DEBUG_EM 
+          #ifdef DEBUG_EM
             Serial.print(F("  "));
             Serial.print((this->ident));
             Serial.println(F(": I'm bleeding or busy jumping"));
