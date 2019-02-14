@@ -36,6 +36,69 @@ The Monitor module takes care of processing the serial messages, as well as prov
 
 
 ## Message structure
-Describe serial message structure.
+PiLink will be a simple serial connection.
+At the end of each loop run the Arduino will send a string to the Pi giving the current status.
+A CRC checksum is included to uncover any lines which are corrupt.
+Corrupt lines will be ignored as the next should be transmitted within the next 1-5 seconds and so retransmitting the previous line would be a waste of resources.
+When the Pi wishes to update the settings or configuration of the Arduino, one or more commands will be sent over the PiLink.
+The Arduino won’t implicitly confirm the changes however the Pi should verify that the changes have been accepted by ensuring that the settings reported back in the next status update reflect the changes.
+Wherever possible the Parameter names will match in the Pi &rarr; Arduino and Arduino &rarr; Pi systems.
+A command line coming from the Pi will not include a payload of more than 80 characters making a command no longer than 92 characters long.
 
-#### Special characters
+### Special characters
+There are special characters used parse the message and cannot be used as part of the message: the ampersand `&`; pipe `|`; asterisk `*` and dollarsign `$`.
+
+
+
+### RPi &rarr; Arduino
+The message has the following format:
+`Len*CRC32$Param|Value&Param|Value`
+where `Len` is the length of the message payload,
+`CRC32` is a checksum of the payload contents,
+and each `Param|Value` pair include a unique parameter Id and a positive Integer value (decimal numbers will be converted on the Arduino.)
+
+Messages will always contain the `Len` block, the `CRC32` block and one or more `Param|Value` tuples.
+The `Len` block is always the first to lead and is terminated by the special character `*`.
+What follows is the checksum `CRC32` which is used to verify the message integrity.
+The `CRC32` is terminated by the special character `$`.
+
+Every `Param|Value` pairs are separated by the `&` character. The `Param` and `Value` within the tuple is separated by the `|` character.
+
+In the case of a corrupted message, that does not contain the special parsing characters, the Arduino drops the message after trying to interpret 80 characters.
+
+
+ Examples:  
+
+`30*xxxxxxxx$IPA|192&IPB|168&IPC|42&IPD|142`  
+In this first example, the Pi is providing its configured network address to the Arduino for display in the UI.
+
+In another example:
+`20*xxxxxxxx$TP|3750&CP|1950&LS|1`
+
+the Pi is directing the Arduino to change the temperature setpoint (with key `TP`) to 37.5, the CO2 setpoint (with key `CP`) to 19.50 and to turn on the lighting system (with key `LS`).
+
+The following table describes the possible keys:
+
+Administrative:
+
+ | Param      |Description          | Unit 	    | Example |
+ | ----       | ----                | ----	    | ----	  |
+ |`ID`        |Serial Identifier    | ?         | ...     |
+ |`IPA`-`IPD` |Pi active IP address |(by hextet)| ...     |
+ |`MEA`-`MEF` |Pi wired MAC address |(by octet) | ...     |
+ |`MLA`-`MLF` |Pi wifi MAC address  |(by octet) | ...     |
+ |`SS`        |Save settings        |Boolean    | ...     |
+
+
+
+Environmental:
+
+ | Param |Description          | Unit 	               | Example 	|
+ | ----  | ----                | ----	                 | ----	|
+ |`FM`   |Fan mode             | Enum                  | 1   |
+ |`TM`   |Heating Mode         | Enum                  | 1   |
+ |`TP`   |Temperature set point| Hundredths of degree C|3700 = 37*C |
+ |`CM`   |CO2 Mode             | Enum                  | 1 |
+ |`CP`   |CO2 set point        | Hundredths of %       |520= 5.20%
+ |`OM`   |O2 mode              | Enum                  | 1 |
+ |`OP`   |O2 set point         | Hundredths of %       |2000= 20.00%
