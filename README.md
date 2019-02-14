@@ -104,8 +104,7 @@ Every `Param|Value` pairs are separated by the `&` character. The `Param` and `V
 
 In the case of a corrupted message, that does not contain the special parsing characters, the Arduino drops the message after trying to interpret 80 characters.
 
-
- Examples:  
+Examples:  
 
 `30*xxxxxxxx$IPA|192&IPB|168&IPC|42&IPD|142`  
 In this first example, the Pi is providing its configured network address to the Arduino for display in the UI.
@@ -125,7 +124,7 @@ Administrative:
  |`IPA`-`IPD` |Pi active IP address |(by hextet)| ...     |
  |`MEA`-`MEF` |Pi wired MAC address |(by octet) | ...     |
  |`MLA`-`MLF` |Pi wifi MAC address  |(by octet) | ...     |
- |`SS`        |Save settings        |Boolean    | ...     |
+ |`SS`        |Save settings        |Boolean    | `1` (save)     |
 
 
 
@@ -133,10 +132,10 @@ Environmental:
 
  | Param |Description          | Unit 	               | Example 	|
  | ----  | ----                | ----	                 | ----	|
- |`FM`   |Fan mode             | Enum                  | 1   |
- |`TM`   |Heating Mode         | Enum                  | 1   |
- |`TP`   |Temperature set point| Hundredths of degree C|3700 = 37.00C |
- |`CM`   |CO2 Mode             | Enum                  | 1 |
- |`CP`   |CO2 set point        | Hundredths of %       |520= 5.20%
- |`OM`   |O2 mode              | Enum                  | 1 |
- |`OP`   |O2 set point         | Hundredths of %       |2000= 20.00%
+ |`FM`   |Fan mode             | Enum                  | `0` (off)   |
+ |`TM`   |Heating Mode         | Enum                  | `1` (on)   |
+ |`TP`   |Temperature set point| Hundredths of degree C|`3700` (37.00C) |
+ |`CM`   |CO2 Mode             | Enum                  | `1` (read) |
+ |`CP`   |CO2 set point        | Hundredths of %       |`520` (5.20%)
+ |`OM`   |O2 mode              | Enum                  | `2`  (maintain) |
+ |`OP`   |O2 set point         | Hundredths of %       |`2000` (20.00%)
