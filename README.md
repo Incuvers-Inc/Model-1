@@ -1,7 +1,7 @@
 
 # Incuvers Environment Control
 This code is intended for the Incuvers telemetric chamber [http://www.incuvers.com](http://www.incuvers.com).
-The Arduino code manages the incubator environmental and physical user interface via buttons on the unit.
+The Arduino code manages the incubator environment and physical user interface via buttons on the unit.
 A Raspberry Pi connects to the Arduino control board and processes the telemetry to the cloud.
 
 ## Arduino
