@@ -14,62 +14,6 @@
 #define OO_MAX 21.0
 #define OO_DLT 0.1
 
-String CentreStringForDisplay(String prn, int width) {
-  String ret = "";
-  int padding = ((width - prn.length())/2);
-
-  for (int i = 0; i < padding; i++) {
-    ret += " ";
-  }
-  ret += prn;
-  for (int i = 0; i < (width-(padding + prn.length())); i++) {
-    ret += " ";
-  }
-
-  return ret;
-}
-
-char GetIndicator(boolean enabled, boolean stepping, boolean altSymbol, boolean altBlank) {
-  char r = ' ';
-  
-  if (altBlank) { 
-    r = '-'; // For use in the serial output.
-  }
-
-  if (enabled && !stepping) {
-    if (altSymbol) {
-      r = '#';
-    } else {
-      r = '*';
-    }
-  } else if (enabled && stepping) {
-    if (altSymbol) {
-      r = '=';
-    } else {
-      r = '+';
-    }
-  }
-
-  return r;
-}
-
-/*boolean IsSameOWAddress(byte addrA[8], byte addrB[8]) {
-  boolean isTheSame = true;
-  for (int i=0; i<8; i++) {
-    if (addrA[i] != addrB[i]) {
-      #ifdef DEBUG_GENERAL
-        Serial.println("");
-        Serial.print(addrA[i], HEX);
-        Serial.print(" != ");
-        Serial.print(addrB[i], HEX);
-      #endif
-      isTheSame = false;
-      i = 42;
-    }
-  }
-  return isTheSame;
-} */
-
 class IncuversUI {
   private:
     LiquidTWI2* lcd;
@@ -85,9 +29,17 @@ class IncuversUI {
       }
     }
     
-    void LCDDrawDualLineUI() {  
+    void LCDDrawDualLineUI() {
+      #ifdef DEBUG_UI
+      Serial.print(F("UI::LCDDrawDualLineUI - "));
+      #endif
+        
       int rowI = 0;
       if (incSet->getHeatMode() == 1) {
+        #ifdef DEBUG_UI
+        Serial.print(F("Heat "));
+        #endif
+        
         lcd->setCursor(0, rowI);
         lcd->print("Temp: ");
         if (incSet->getHeatMode() == 1) {
@@ -106,6 +58,9 @@ class IncuversUI {
         rowI++;
       }
       if (incSet->getCO2Mode() > 0) {
+        #ifdef DEBUG_UI
+        Serial.print(F("CO2 "));
+        #endif
         lcd->setCursor(0, rowI);
         lcd->print(" CO2: ");
         if (incSet->getCO2Mode() > 0 && incSet->getCO2Level() >= 0) {
@@ -123,6 +78,9 @@ class IncuversUI {
         rowI++;
       }
       if (incSet->getO2Mode() > 0) {
+        #ifdef DEBUG_UI
+        Serial.print(F("O2 "));
+        #endif
         lcd->setCursor(0, rowI);
         lcd->print("  O2: ");
         if (incSet->getO2Mode() > 0 && incSet->getO2Level() >= 0) {
@@ -139,6 +97,17 @@ class IncuversUI {
         }
         rowI++;
       }
+      if (incSet->getLightMode() > 0) {
+        #ifdef DEBUG_UI
+        Serial.print(F("Light "));
+        #endif
+        lcd->setCursor(0, rowI);
+        lcd->print(incSet->getLightModule()->GetOldUIDisplay());
+        rowI++;
+      }
+      #ifdef DEBUG_UI
+      Serial.println(F(""));
+      #endif
     }
     
     void LCDDrawNewUI() {
@@ -146,6 +115,8 @@ class IncuversUI {
        * T.*+  CO2+   O2+
        * 35.5  10.5  18.2
        */
+
+      // TODO: Fix this UI display to support lighting.
       lcd->setCursor(0, 0);
       lcd->print("T.");
       lcd->print(GetIndicator(incSet->isDoorOn(), incSet->isDoorStepping(), true, false));
@@ -173,60 +144,32 @@ class IncuversUI {
       }
     }
 
-    String PadToWidth(int source, int intSize) {
-      if (String(source).length() >= intSize) {
-        return String(source);
-      } else {
-        return String("0" + PadToWidth(source, intSize - 1));
-      }
-    }
-    
-    String ConvertMillisToReadable(long totalMillisCount) {
-      long runningAmount;
-      int pureMillis = totalMillisCount % 1000;
-      runningAmount = floor(totalMillisCount / 1000);
-      int seconds = runningAmount % 60;
-      runningAmount = floor(runningAmount / 60);
-      int minutes = runningAmount % 60;
-      runningAmount = floor(runningAmount / 60);
-      int hours = runningAmount % 24;
-      int days = floor(runningAmount / 24);
-      
-      String readable = String(PadToWidth(days, 2) + "d" + PadToWidth(hours, 2)+ "H" + PadToWidth(minutes, 2) + "m" + PadToWidth(seconds, 2) + "." + PadToWidth(pureMillis, 4));
-      return readable;
-    }
-    
-    #ifdef DEBUG_MEMORY
-      int freeMemory() {
-        extern int __heap_start, *__brkval; 
-        int v; 
-        return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
-      }
-    #endif
-    
     void SerialPrintStatus() {
       Serial.print(ConvertMillisToReadable(millis()));
-      Serial.print(F(" ID "));
+      Serial.print(F(" ID "));              // Identification
       Serial.print(incSet->getSerial());
-      Serial.print(F(" TC "));
+      Serial.print(F(" TC "));              // Temperature, chamber
       Serial.print(incSet->getChamberTemperature(), 2);
-      Serial.print(F(" TD "));
+      Serial.print(F(" TD "));              // Temperature, door
       Serial.print(incSet->getDoorTemperature(), 2);
-      Serial.print(F(" CO "));
+      Serial.print(F(" TO "));              // Temperature, other
+      Serial.print(incSet->getOtherTemperature(), 2);
+      Serial.print(F(" CO "));              // CO2 level reading
       Serial.print(incSet->getCO2Level(), 2);
-      Serial.print(F(" OO "));
+      Serial.print(F(" OO "));              // O2 level reading
       Serial.print(incSet->getO2Level(), 2);
-      Serial.print(F(" AP "));
+      Serial.print(F(" AP "));              // Active peripherals
       Serial.print(GetIndicator(incSet->isDoorOn(), incSet->isDoorStepping(), false, true));
       Serial.print(GetIndicator(incSet->isChamberOn(), incSet->isChamberStepping(), false, true));
       Serial.print(GetIndicator(incSet->isCO2Open(), incSet->isCO2Stepping(), false, true));
       Serial.print(GetIndicator(incSet->isO2Open(), incSet->isO2Stepping(), false, true));
-      Serial.print(F(" OA "));
+      Serial.print(incSet->getLightModule()->GetSerialAPIndicator());
+      Serial.print(F(" OA "));              // Orchestrated alarms
       Serial.print(GetIndicator(incSet->isHeatAlarmed(), false, false, true));
       Serial.print(GetIndicator(incSet->isCO2Alarmed(), false, false, true));
       Serial.print(GetIndicator(incSet->isO2Alarmed(), false, false, true));
       #ifdef DEBUG_MEMORY
-      Serial.print(F(" FM "));
+      Serial.print(F(" FM "));              // Free memory
       Serial.print(freeMemory());
       #endif
       Serial.println();
@@ -250,15 +193,26 @@ class IncuversUI {
     }
     
     int PollButton() {
-        Wire.beginTransmission(0x20); // Connect to chip
-        Wire.write(0x12);             // Address port A
-        Wire.endTransmission();       // Close connection
-        Wire.requestFrom(0x20, 1);    // Request one Byte
-        return(Wire.read());          // Return the state 
-                                      //  0 = no buttons pushed
-                                      //  1 = upper button pushed
-                                      //  2 = lower button pushed
-                                      //  3 = both buttons pushed
+      int readVal;
+      int returnVal = 0;
+      Wire.beginTransmission(0x20); // Connect to chip
+      Wire.write(0x12);             // Address port A
+      Wire.endTransmission();       // Close connection
+      Wire.requestFrom(0x20, 1);    // Request one Byte
+      readVal = Wire.read();
+      returnVal = readVal & 3; 
+      #ifdef DEBUG_UI
+        Serial.print(F("Poll: "));
+        Serial.print(readVal);
+        Serial.print(F(" --> "));
+        Serial.println(returnVal);
+      #endif
+      
+      return(returnVal);          // Return the state 
+                                    //  0 = no buttons pushed
+                                    //  1 = upper button pushed
+                                    //  2 = lower button pushed
+                                    //  3 = both buttons pushed
     }
     
     int GetButtonState() {
@@ -267,10 +221,7 @@ class IncuversUI {
     
       c = PollButton();
       
-      #ifdef DEBUG_UI
-        Serial.print(F("Poll: "));
-        Serial.println(c);
-      #endif
+      
       
       if (c != 0) {
         if (c == lastButtonState) {
@@ -333,6 +284,12 @@ class IncuversUI {
               if (incSet->getO2Mode() == 1) { onTag = F("Monitor "); }
               if (incSet->getO2Mode() == 2) { onTag = F("Maintain"); }
               break;
+            case 5: // Light
+              mode = incSet->getLightMode();
+              tag = F("Light: ");
+              if (incSet->getLightMode() == 1) { onTag = F("Int."); }
+              if (incSet->getLightMode() == 2) { onTag = F("Ext."); }
+              break;
           }
           lcd->clear();
           lcd->setCursor(0, 0);
@@ -385,6 +342,15 @@ class IncuversUI {
                   incSet->setO2Mode(2);
                 } else {
                   incSet->setO2Mode(0);
+                }
+                break;
+              case 5: // Light
+                if (incSet->getLightMode() == 0) {
+                  incSet->setLightMode(1);
+                } else if (incSet->getLightMode() == 1) {
+                  incSet->setLightMode(2);
+                } else {
+                  incSet->setLightMode(0);
                 }
                 break;
             }
@@ -565,22 +531,107 @@ class IncuversUI {
       boolean doLoop = true;
       boolean redraw = true;
       int userInput;
+      int firstline = 1;
+      int lineId = 0;
+      long displayRedraw = 0;
     
       while (doLoop) {
         if (redraw) {
+          displayRedraw = millis();
+          lineId = 0;
           lcd->clear();
-          lcd->setCursor(0, 0);
-          lcd->print(F("Hrd Rev: "));
-          lcd->print(incSet->getHardware());
-          lcd->setCursor(0, 1);
-          lcd->print(F("SN: "));
-          lcd->print(incSet->getSerial());
+          if (firstline == 1) {
+            lcd->setCursor(0, lineId);
+            lcd->print(F("Hrd Rev: "));
+            lcd->print(incSet->getHardware());
+            lineId++;
+          }
+          if (firstline == 1 || firstline == 2) {
+            lcd->setCursor(0, lineId);
+            lcd->print(F("SN: "));
+            lcd->print(incSet->getSerial());
+            lineId++;
+          }
+          if (firstline == 2 || firstline == 3) {
+            lcd->setCursor(0, lineId);
+            lcd->print(F("Hardware opts: "));
+            //lcd->print();
+            lineId++;
+          }
+          if (firstline == 3 || firstline == 4) {
+            String hwSup = F("H ");
+            if (incSet->HasCO2Sensor()) {
+              hwSup = String(hwSup + F("CO2 "));
+            }
+            if (incSet->HasO2Sensor()) {
+              hwSup = String(hwSup + F("O2 "));
+            }
+            if (incSet->CountGasRelays() > 0) {
+              hwSup = String(hwSup + incSet->CountGasRelays() + F("S "));
+            }
+            if (incSet->HasLighting()) {
+              hwSup = String(hwSup + F("L "));
+            }
+            if (incSet->HasPiLink()) {
+              hwSup = String(hwSup + F("PL "));
+            }
+            lcd->setCursor(0, lineId);
+            lcd->print(hwSup);
+            //lcd->print();
+            lineId++;
+          }
+          if (firstline == 4 || firstline == 5) {
+            lcd->setCursor(0, lineId);
+            lcd->print(F("Software incld: "));
+            //lcd->print();
+            lineId++;
+          }
+          if (firstline == 5 || firstline == 6) {
+            String swSup = F("H ");
+            #ifdef INCLUDE_CO2
+            swSup = String(swSup + F("CO2 "));
+            #endif
+            #ifdef INCLUDE_O2
+            swSup = String(swSup + F("O2 "));
+            #endif
+            #ifdef INCLUDE_LIGHT
+            swSup = String(swSup + F("L "));
+            #endif
+            #ifdef INCLUDE_ETHERNET
+            swSup = String(swSup + F("E "));
+            #endif
+            lcd->setCursor(0, lineId);
+            lcd->print(swSup);
+            //lcd->print();
+            lineId++;
+          }
           redraw = false;
         }
         userInput = GetButtonState();
         
         if (userInput != 0) {
-            doLoop=false;
+          switch (userInput) {
+            case 1:
+              if (firstline > 1) { firstline--; }
+              redraw = true;
+              break;
+            case 2:
+              if (firstline < 5) { firstline++; }
+              redraw = true;
+              break;
+            case 3:
+              doLoop=false;
+              break;
+          }
+          delay(MENU_UI_POST_DELAY);
+        } else {
+          delay(MENU_UI_POST_DELAY);
+          if (displayRedraw + 10000 < millis()) {
+            firstline++;
+            if (firstline > 5) {
+              firstline = 1;
+            }
+          }
         }
       }
     }
@@ -605,6 +656,60 @@ class IncuversUI {
         lcd->print(optTwo);
       }
     }
+
+#define MAINMENU_SET_HEAT 1
+#define MAINMENU_SET_CO2 2
+#define MAINMENU_SET_O2 3
+#define MAINMENU_SET_LITE_ON 4
+#define MAINMENU_SET_LITE_OFF 5
+#define MAINMENU_PAGE_ADVANCED 6
+#define MAINMENU_CONF_HEAT 7
+#define MAINMENU_CONF_FAN 8
+#define MAINMENU_CONF_C02 9
+#define MAINMENU_CONF_O2 10
+#define MAINMENU_CONF_LITE 11
+#define MAINMENU_PAGE_INFO 12
+#define MAINMENU_PAGE_DEFAULTS 13
+#define MAINMENU_PAGE_BASIC 14
+
+    int CheckScreenNumber(int screen) {
+      if (screen < MAINMENU_SET_HEAT || screen > MAINMENU_PAGE_BASIC) {
+        screen = 1; // go to the first screen
+      }
+      if (screen == MAINMENU_SET_HEAT && incSet->getHeatMode() == 0) {
+        // heat disabled, skip heat setpoint screen
+        screen++;
+      }
+      if (screen == MAINMENU_SET_CO2 && incSet->getCO2Mode() < 2) {
+        // CO2 maintenance disabled, skip setpoint screen
+        screen++;
+      }
+      if (screen == MAINMENU_SET_O2 && incSet->getO2Mode() < 2) {
+        // O2 maintenance disabled, skip setpoint screen
+        screen++;
+      }
+      if (screen == MAINMENU_SET_LITE_ON /*&& incSet->getLightMode() < 1*/) {
+        // Lighting system disabled, skip setpoint screen
+        screen++;
+      }
+      if (screen == MAINMENU_SET_LITE_OFF /*&& incSet->getLightMode() < 1*/) {
+        // Lighting system disabled, skip setpoint screen
+        screen++;
+      }
+      if (screen == MAINMENU_CONF_C02 && !incSet->HasCO2Sensor()) {
+        // CO2 sensor not present, skip configuartion screen
+        screen++;
+      }
+      if (screen == MAINMENU_CONF_O2 && !incSet->HasO2Sensor()) {
+        // O2 sensor not present, skip configuartion screen
+        screen++;
+      }
+      if (screen == MAINMENU_CONF_LITE && !incSet->HasLighting()) {
+        // Lights not present, skip configuartion screen
+        screen++;
+      }  
+      return screen;
+    }
     
     void SetupLoop() {
       boolean doLoop = true;
@@ -617,24 +722,11 @@ class IncuversUI {
       DisplayLoadingBar();
       delay(MENU_UI_REDRAW_DELAY);
       while (doLoop) {
-        if (screen < 1 || screen > 11) {
-          screen = 1; // go to the first screen
-        }
 
-        if (screen == 1 && incSet->getHeatMode() == 0) {
-          // heat disabled, skip heat setpoint screen
-          screen++;
-        }
-        if (screen == 2 && incSet->getCO2Mode() < 2) {
-          // CO2 disables, skip setpoint screen
-          screen++;
-        }
-        if (screen == 3 && incSet->getO2Mode() < 2) {
-          screen++;
-        }
+        screen = CheckScreenNumber(screen);
         
         switch (screen) {
-          case 1:
+          case MAINMENU_SET_HEAT:
             if (redraw) {
               DrawMainMenuPage("Set Temp.", "", true, "", "");
               delay(MENU_UI_POST_DELAY);
@@ -645,7 +737,7 @@ class IncuversUI {
               userInput = 0;
             }
             break;
-          case 2:
+          case MAINMENU_SET_CO2:
             if (redraw) {
               DrawMainMenuPage("Set CO2", "", true, "", "");
               delay(MENU_UI_POST_DELAY);
@@ -656,7 +748,7 @@ class IncuversUI {
               userInput = 0;
             }
             break;
-          case 3:
+          case MAINMENU_SET_O2:
             if (redraw) {
               DrawMainMenuPage("Set O2", "", true, "", "");
               delay(MENU_UI_POST_DELAY);
@@ -667,7 +759,29 @@ class IncuversUI {
               userInput = 0;
             }
             break;
-          case 4:
+          case MAINMENU_SET_LITE_ON:
+            if (redraw) {
+              DrawMainMenuPage("Set LED On", "", true, "", "");
+              delay(MENU_UI_POST_DELAY);
+              redraw=false;
+            } else if (userInput == 1) {
+              DoVariableAdjust(4);
+              redraw = true;
+              userInput = 0;
+            }
+            break;
+          case MAINMENU_SET_LITE_OFF:
+            if (redraw) {
+              DrawMainMenuPage("Set LED Off", "", true, "", "");
+              delay(MENU_UI_POST_DELAY);
+              redraw=false;
+            } else if (userInput == 1) {
+              DoVariableAdjust(5);
+              redraw = true;
+              userInput = 0;
+            }
+            break;
+          case MAINMENU_PAGE_ADVANCED:
             if (redraw) {
               DrawMainMenuPage("Settings", "", false, "Save", "Advanced");
               redraw=false;
@@ -677,7 +791,7 @@ class IncuversUI {
               userInput = 0;
             }
             break;
-          case 5:
+          case MAINMENU_CONF_HEAT:
             if (redraw) {
               DrawMainMenuPage("Heating", "", true, "", "");
               delay(MENU_UI_POST_DELAY);
@@ -688,7 +802,7 @@ class IncuversUI {
               userInput = 0;
             }
             break;
-          case 6:
+          case MAINMENU_CONF_FAN:
             if (redraw) {
               DrawMainMenuPage("Fan Mode", "", true, "", "");
               delay(MENU_UI_POST_DELAY);
@@ -699,7 +813,7 @@ class IncuversUI {
               userInput = 0;
             }
             break;
-          case 7:
+          case MAINMENU_CONF_C02:
             if (redraw) {
               DrawMainMenuPage("CO2", "", true, "", "");
               delay(MENU_UI_POST_DELAY);
@@ -710,7 +824,7 @@ class IncuversUI {
               userInput = 0;
             }
             break;
-          case 8:
+          case MAINMENU_CONF_O2:
             if (redraw) {
               DrawMainMenuPage("Oxygen", "", true, "", "");
               delay(MENU_UI_POST_DELAY);
@@ -721,7 +835,18 @@ class IncuversUI {
               userInput = 0;
             }
             break;
-          case 9:
+          case MAINMENU_CONF_LITE:
+            if (redraw) {
+              DrawMainMenuPage("Light", "", true, "", "");
+              delay(MENU_UI_POST_DELAY);
+              redraw=false;
+            } else if (userInput == 1) {
+              DoFeatureToggle(5);
+              redraw = true;
+              userInput = 0;
+            }
+            break;
+          case MAINMENU_PAGE_INFO:
             if (redraw) {
               DrawMainMenuPage("Information", "", true, "", "");
               delay(MENU_UI_POST_DELAY);
@@ -732,7 +857,7 @@ class IncuversUI {
               userInput = 0;
             }
             break;  
-          case 10:
+          case MAINMENU_PAGE_DEFAULTS:
             if (redraw) {
               DrawMainMenuPage("Defaults", "", false, "Reset", "Next");
               redraw=false;
@@ -743,11 +868,11 @@ class IncuversUI {
               lcd->setCursor(0, 0);
               lcd->print(F("Reset to default"));
               DisplayLoadingBar();
-              doLoop = false;
+              redraw = true;
               userInput = 0;
             }
             break;
-          case 11:
+          case MAINMENU_PAGE_BASIC:
             if (redraw) {
               DrawMainMenuPage("Settings", "", false, "Save", "Basic");
               redraw=false;
@@ -802,7 +927,7 @@ class IncuversUI {
       Wire.begin(); // wake up I2C bus
       Wire.beginTransmission(0x20);
       Wire.write(0x00); // IODIRA register
-      Wire.write(0x01); // set all of port A to inputs
+      Wire.write(0xFF); // set all of port A to input
       Wire.endTransmission();
     }
 
@@ -814,7 +939,7 @@ class IncuversUI {
       this->lcd->setCursor(0,0);
       this->lcd->print(F("Incuvers Model 1"));
       this->lcd->setCursor(0,1);
-      this->lcd->print(CentreStringForDisplay(F("V1.9"),16));
+      this->lcd->print(CentreStringForDisplay(F("V1.11"),16));
       delay(1000);
       this->lcd->clear();
   
@@ -856,6 +981,11 @@ class IncuversUI {
         shortDebugDesc += "T";
       #endif
 
+      #ifdef DEBUG_LIGHT
+        longDebugDesc += F("Light, ");
+        shortDebugDesc += "L";
+      #endif
+      
       #ifdef DEBUG_MEMORY
         longDebugDesc += F("Memory, ");
         shortDebugDesc += "M";
@@ -893,7 +1023,7 @@ class IncuversUI {
     }
   
     void LCDDrawDefaultUI() {
-      if (incSet->getPersonalityCount() == 3) {
+      if (incSet->getPersonalityCount() >= 3) {
         LCDDrawNewUI();
       }
       if (incSet->getPersonalityCount() < 3) {
@@ -927,7 +1057,7 @@ class IncuversUI {
       }
    
       SerialPrintStatus();
-      // Do the alarm orchestrator last as it will reset alarms whichw e want present in the PrintStatus above.
+      // Do the alarm orchestrator last as it will reset alarms which we want present in the PrintStatus above.
       AlarmOrchestrator();
     }
     

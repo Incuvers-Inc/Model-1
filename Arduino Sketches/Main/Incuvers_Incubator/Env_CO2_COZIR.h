@@ -1,3 +1,4 @@
+#ifdef INCLUDE_CO2 
 #define CO2_STEP_THRESH 0.7
 #define CO2_MULTIPLIER 10.0
 #define CO2_DELTA_JUMP 3000
@@ -59,12 +60,12 @@ class IncuversCO2System {
     
       for (int i = 0; i < 2; i++)
       {
-        cozirString = this->iSS->GetSerialSensorReading(10, 17);
-        // Data in the stream looks like "Z 00400 z 00360"
+        cozirString = this->iSS->GetSerialSensorReading(6, 10);
+        // Data in the stream looks like "Z 00400"
         // The first number is the filtered value and the number after 
         // the 'z' is the raw value. We want the filtered value
     
-        reading = GetIntegerSensorReading('Z', cozirString, -1);
+        reading = GetIntegerSensorReading('Z', cozirString, -100);
     
         if (reading > 0 && reading < 300000) {
           level = (float)((CO2_MULTIPLIER * reading)/10000);  
@@ -151,7 +152,7 @@ class IncuversCO2System {
       level = -100;
       // Setup Serial Interface
       this->iSS = new IncuversSerialSensor();
-      this->iSS->Initialize(rxPin, txPin, true); 
+      this->iSS->Initialize(rxPin, txPin, "K 2", "Z"); 
       
       //Setup the gas system
       this->pinAssignment_Valve = relayPin;
@@ -180,12 +181,6 @@ class IncuversCO2System {
         this->on = false;
         this->stepping = false;
         this->started = false;
-      }
-    }
-
-    void DoMiniTick() {
-      if (this->enabled) {
-        this->iSS->StartListening();
       }
     }
 
@@ -243,3 +238,48 @@ class IncuversCO2System {
     }
 
 };
+
+#else
+class IncuversCO2System {
+  public:
+    void SetupCO2(int rxPin, int txPin, int relayPin) {
+      pinMode(relayPin, OUTPUT);  
+      digitalWrite(relayPin, LOW);   // Set LOW (solenoid closed off)
+    }
+
+    void SetSetPoint(float tempSetPoint) {
+    }
+    
+    void MakeSafeState() {
+    }
+
+    void DoMiniTick() {
+    }
+
+    void DoTick() {
+    }
+
+    float getCO2Level() {
+      return -1.0;
+    }
+
+    boolean isCO2Open() {
+      return false;
+    }
+
+    boolean isCO2Stepping() {
+      return false;
+    }
+
+    void UpdateMode(int mode) {
+    }
+
+    boolean isAlarmed() {
+      return false;
+    }
+
+    void ResetAlarms() {
+    }
+};
+#endif
+

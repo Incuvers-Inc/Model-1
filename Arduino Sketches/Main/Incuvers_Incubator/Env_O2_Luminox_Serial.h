@@ -1,3 +1,4 @@
+#ifdef INCLUDE_O2_SERIAL
 #define OO_STEP_THRESH 1.01
 #define N_DELTA_JUMP 10000
 #define N_DELTA_STEPPING 250
@@ -5,6 +6,7 @@
 #define N_BLEEDTIME_STEPPING 5000
 #define ALARM_THRESH 1.10
 #define ALARM_O2_READING_PERIOD 1000
+#define ALARM_O2_OPEN_PERIOD 600000
 
 class IncuversO2System {
   private:
@@ -27,6 +29,8 @@ class IncuversO2System {
     
     float level;
     float setPoint;
+    float temp;
+    int pressure;
     
     IncuversSerialSensor* iSS;
 
@@ -65,8 +69,8 @@ class IncuversO2System {
         //                                         T=temp in deg C         e=sensor errors
         //                                                        %=O2 concentration in %
         
-        reading = GetDecimalSensorReading('%', luminoxString, -1);
-    
+        reading = GetDecimalSensorReading('%', luminoxString, -100);
+        
         if (reading > 0 && reading < 30) {
           level = reading;  
           #ifdef DEBUG_O2
@@ -80,6 +84,24 @@ class IncuversO2System {
             Serial.println(i);
           #endif 
         }
+
+        reading = GetDecimalSensorReading('T', luminoxString, -100);
+        
+        if (reading > -40 && reading < 80) {
+          temp = reading;  
+          #ifdef DEBUG_O2
+            Serial.print("  O2 sensor detects temperature to be: ");
+            Serial.println(temp);
+          #endif
+          i = 5; // escape the loop.
+        } else {
+          #ifdef DEBUG_O2
+            Serial.print(F("\tO2 sensor returned invalid temperature reading"));
+            Serial.println(i);
+          #endif 
+        }
+
+        pressure = GetIntegerSensorReading('P', luminoxString, -100);
       }
     }
     
@@ -103,7 +125,7 @@ class IncuversO2System {
               started = true;
               startO2At = tickTime;
             } else {
-              if (startO2At + ALARM_CO2_OPEN_PERIOD < tickTime) {
+              if (startO2At + ALARM_O2_OPEN_PERIOD < tickTime) {
                 alarmOver = true;
                 #ifdef DEBUG_O2
                   Serial.println(F("\tO2 over-saturation alarm"));
@@ -149,7 +171,7 @@ class IncuversO2System {
       level = -100;
       // Setup Serial Interface
       this->iSS = new IncuversSerialSensor();
-      this->iSS->Initialize(rxPin, txPin, true); 
+      this->iSS->Initialize(rxPin, txPin, "M 1", "A"); 
       
       //Setup the gas system
       this->pinAssignment_Valve = relayPin;
@@ -178,12 +200,6 @@ class IncuversO2System {
       this->on = false;
       this->stepping = false;
       this->started = false;
-    }
-
-    void DoMiniTick() {
-      if (this->enabled) {
-        this->iSS->StartListening();
-      }
     }
 
     void DoTick() {
@@ -238,3 +254,49 @@ class IncuversO2System {
       alarmUnder = false;
     }
 };
+
+#else
+class IncuversO2System {
+  private:
+    
+  public:
+    void SetupO2(int rxPin, int txPin, int relayPin) {
+      pinMode(relayPin, OUTPUT);  
+      digitalWrite(relayPin, LOW);   // Set LOW (solenoid closed off)
+    }
+
+    void SetSetPoint(float tempSetPoint) {
+    }
+    
+    void MakeSafeState() {
+    }
+
+    void DoMiniTick() {
+    }
+
+    void DoTick() {
+    }
+
+    float getO2Level() {
+      return -1.0;
+    }
+
+    boolean isNOpen() {
+      return false;
+    }
+
+    boolean isNStepping() {
+      return false;
+    }
+
+    void UpdateMode(int mode) {
+    }
+
+    boolean isAlarmed() {
+      return false;
+    }
+
+    void ResetAlarms() {
+    }
+};
+#endif

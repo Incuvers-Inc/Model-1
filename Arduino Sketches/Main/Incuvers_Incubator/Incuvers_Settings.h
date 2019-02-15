@@ -1,13 +1,13 @@
 // Hardware settings definitions
-#define HARDWARE_IDENT "M1a"
+#define HARDWARE_IDENT "M1c"
 #define HARDWARE_ADDRS 4 
 
 // Settings definitions
-#define SETTINGS_IDENT_CURR 20
+#define SETTINGS_IDENT_CURR 111
 #define SETTINGS_ADDRS 64
 
 // Defaults
-#define TEMPERATURE_DEF 37.0
+#define TEMPERATURE_DEF 38.0
 #define CO2_DEF 5.0
 #define OO_DEF 5.0
 
@@ -29,15 +29,20 @@ struct HardwareStruct {
   bool hasO2Sensor;
   byte O2RxPin;
   byte O2TxPin;
-  // Gas Relay
-  byte gasRelayPin;
-  bool secondGasRelay;
-  byte gasRelayTwoPin;
-  // Ethernet
-  bool ethernetSupport;
-  byte ethernetPin;
+  // Gas Relay(s)
+  bool CO2GasRelay;
+  byte CO2RelayPin;
+  bool O2GasRelay;
+  byte O2RelayPin;
+    // PiLink
+  bool piSupport;
+  byte piRxPin;
+  byte piTxPin;
+  // Lighting
+  bool lightingSupport;
+  byte lightPin;
 };
-struct SettingsStruct_Curr {
+struct SettingsStruct {
   byte ident;
   // Fan settings
   byte fanMode;       // 0 = off, 1 = on during heat + 30 seconds after, 2 = on during heat + 60 seconds, 3 = on during heat + 50% of time, 4 = on
@@ -50,6 +55,10 @@ struct SettingsStruct_Curr {
   // O2 settings
   byte O2Mode;        // 0 = off, 1 = read, 2 = maintain
   float O2SetPoint;
+  // Lighting
+  byte lightMode;     // 0 = off, 1 = internal timing, 2 = external timing
+  long millisOn;
+  long millisOff;
   // Alarm settings
   byte alarmMode;     // 0 = off, 1 = report, 2 = alarm
   
@@ -58,9 +67,10 @@ struct SettingsStruct_Curr {
 class IncuversSettingsHandler {
   private:
     HardwareStruct settingsHardware;
-    SettingsStruct_Curr settingsHolder;
+    SettingsStruct settingsHolder;
   
     IncuversHeatingSystem* incHeat;
+    IncuversLightingSystem* incLight;
     IncuversCO2System* incCO2;
     IncuversO2System* incO2;
     
@@ -173,12 +183,17 @@ class IncuversSettingsHandler {
         Serial.println(settingsHardware.O2RxPin);
         Serial.println(settingsHardware.O2TxPin);
         // Gas Relay
+        Serial.println(settingsHardware.firstGasRelay);
         Serial.println(settingsHardware.gasRelayPin);
         Serial.println(settingsHardware.secondGasRelay);
         Serial.println(settingsHardware.gasRelayTwoPin);
-        // Ethernet
-        Serial.println(settingsHardware.ethernetSupport);
-        Serial.println(settingsHardware.ethernetPin);
+        // PiLink
+        Serial.println(settingsHardware.piSupport);
+        Serial.println(settingsHardware.piRxPin);
+        Serial.println(settingsHardware.piTxPin);
+        // Lighting
+        Serial.println(settingsHardware.lightingSupport);
+        Serial.println(settingsHardware.lightPin);
         Serial.println(F("/RdHrdwrSet"));
         #endif
         return true;
@@ -209,6 +224,9 @@ class IncuversSettingsHandler {
         Serial.println(settingsHolder.CO2SetPoint);
         Serial.println(settingsHolder.O2Mode);
         Serial.println(settingsHolder.O2SetPoint);
+        Serial.println(settingsHolder.lightMode);
+        Serial.println(settingsHolder.millisOn);
+        Serial.println(settingsHolder.millisOff);
         Serial.println(settingsHolder.alarmMode);
         
       #endif
@@ -229,11 +247,15 @@ class IncuversSettingsHandler {
       this->settingsHolder.heatMode = 1;
       this->settingsHolder.heatSetPoint = TEMPERATURE_DEF; 
       // CO2 setup
-      this->settingsHolder.CO2Mode = 1;
+      this->settingsHolder.CO2Mode = 2;
       this->settingsHolder.CO2SetPoint = CO2_DEF; 
       // O2 setup
-      this->settingsHolder.O2Mode = 0;
+      this->settingsHolder.O2Mode = 2;
       this->settingsHolder.O2SetPoint = OO_DEF; 
+      // Lighting
+      this->settingsHolder.lightMode = 0;
+      this->settingsHolder.millisOn =  60000;  // 14 hrs = 50400000 milliseconds
+      this->settingsHolder.millisOff = 30000;  // 10 hrs = 36000000 milliseconds
       // Alarm
       this->settingsHolder.alarmMode = 2;
       #ifdef DEBUG_EEPROM
@@ -298,6 +320,9 @@ class IncuversSettingsHandler {
       if (this->settingsHolder.heatMode == 1) {
         this->personalityCount++;
       }
+      if (this->settingsHolder.lightMode > 0) {
+        this->personalityCount++;
+      }
       if (this->settingsHolder.CO2Mode > 0) {
         this->personalityCount++;
       }
@@ -322,8 +347,24 @@ class IncuversSettingsHandler {
                       this->settingsHardware.sensorAddrChamberTemp,
                       this->settingsHolder.heatMode,
                       PINASSIGN_FAN,
-                      this->settingsHolder.fanMode);
-      this->incHeat->SetSetPoint(this->settingsHolder.heatSetPoint);
+                      this->settingsHolder.fanMode,
+                      this->settingsHolder.heatSetPoint);
+    }
+
+    IncuversHeatingSystem* getHeatModule() {
+      return this->incHeat;
+    }
+
+    void AttachIncuversModule(IncuversLightingSystem* iLight) {
+      this->incLight = iLight;
+
+      this->incLight->SetupLighting(this->settingsHardware.lightPin,
+                      this->settingsHardware.lightingSupport);
+      this->incLight->UpdateLightDeltas(this->settingsHolder.millisOn, this->settingsHolder.millisOff);
+    }
+
+    IncuversLightingSystem* getLightModule() {
+      return this->incLight;
     }
 
     void AttachIncuversModule(IncuversCO2System* iCO2) {
@@ -331,9 +372,13 @@ class IncuversSettingsHandler {
       
       this->incCO2->SetupCO2(this->settingsHardware.CO2RxPin, 
                              this->settingsHardware.CO2TxPin,
-                             this->settingsHardware.gasRelayPin);
+                             this->settingsHardware.CO2RelayPin);
       this->incCO2->UpdateMode(this->settingsHolder.CO2Mode);                      
       this->incCO2->SetSetPoint(this->settingsHolder.CO2SetPoint);
+    }
+
+    IncuversCO2System* getCO2Module() {
+      return this->incCO2;
     }
 
     void AttachIncuversModule(IncuversO2System* iO2) {
@@ -341,9 +386,13 @@ class IncuversSettingsHandler {
       
       this->incO2->SetupO2(this->settingsHardware.O2RxPin, 
                            this->settingsHardware.O2TxPin,
-                           this->settingsHardware.gasRelayPin);
+                           this->settingsHardware.O2RelayPin);
       this->incO2->UpdateMode(this->settingsHolder.O2Mode);                      
       this->incO2->SetSetPoint(this->settingsHolder.O2SetPoint);
+    }
+
+    IncuversO2System* getO2Module() {
+      return this->incO2;
     }
 
     int getPersonalityCount() {
@@ -372,6 +421,10 @@ class IncuversSettingsHandler {
       return incHeat->getDoorTemperature();
     }
 
+    float getOtherTemperature() {
+      return incHeat->getOtherTemperature();
+    }
+    
     boolean isDoorOn() {
       return incHeat->isDoorOn();
     }
@@ -462,7 +515,7 @@ class IncuversSettingsHandler {
     }
 
     String getHardware() {
-      return String(this->settingsHardware.hVer[0])+"."+String(this->settingsHardware.hVer[1])+"."+String(this->settingsHardware.hVer[3]);  
+      return String(this->settingsHardware.hVer[0])+"."+String(this->settingsHardware.hVer[1])+"."+String(this->settingsHardware.hVer[2]);  
     }
     
     String getSerial() {
@@ -471,10 +524,43 @@ class IncuversSettingsHandler {
 
     void MakeSafeState() {
       incHeat->MakeSafeState();
+      incLight->MakeSafeState();
       incCO2->MakeSafeState();
       incO2->MakeSafeState();
     }
 
+    int getLightMode() {
+      return this->settingsHolder.lightMode;
+    }
+
+    void setLightMode(int mode) {
+      this->settingsHolder.lightMode = mode;
+      this->incLight->UpdateMode(mode);
+    }
+    
+    boolean HasCO2Sensor() {
+      return settingsHardware.hasCO2Sensor;
+    }
+
+    boolean HasO2Sensor() {
+      return settingsHardware.hasO2Sensor;
+    }
+
+    int CountGasRelays() {
+      int count = 0;
+      if (settingsHardware.CO2GasRelay) { count++; }
+      if (settingsHardware.O2GasRelay) { count++; }
+      return count;
+    }
+
+    boolean HasPiLink() {
+      return settingsHardware.piSupport;
+    }
+
+    boolean HasLighting() {
+      return settingsHardware.lightingSupport;
+    }
+        
     boolean isHeatAlarmed() {
       return incHeat->isAlarmed();
     }
@@ -499,6 +585,7 @@ class IncuversSettingsHandler {
     
 
 };
+
 
 
 
