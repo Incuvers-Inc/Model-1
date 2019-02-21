@@ -43,14 +43,14 @@ class IncuversUI {
         lcd->setCursor(0, rowI);
         lcd->print("Temp: ");
         if (incSet->getHeatMode() == 1) {
-          lcd->print(incSet->getChamberTemperature(), 1);
+          lcd->print(incSet->getHeatModule()->getChamberTemperature(), 1);
           lcd->print("\337C  ");
-          if (incSet->getChamberTemperature() < 10.0) {
+          if (incSet->getHeatModule()->getChamberTemperature() < 10.0) {
             lcd->print(" ");
           }
-          lcd->print(GetIndicator(incSet->isDoorOn(), incSet->isDoorStepping(), true, false));
-          lcd->print(GetIndicator(incSet->isChamberOn(), incSet->isChamberStepping(), false, false));
-        } else if (incSet->getChamberTemperature() < -20){
+          lcd->print(GetIndicator(incSet->getHeatModule()->isDoorOn(), incSet->getHeatModule()->isDoorStepping(), true, false));
+          lcd->print(GetIndicator(incSet->getHeatModule()->isChamberOn(), incSet->getHeatModule()->isChamberStepping(), false, false));
+        } else if (incSet->getHeatModule()->getChamberTemperature() < -20){
           lcd->print(F("Error   "));
         } else {
           lcd->print(F("Disabled"));
@@ -63,14 +63,14 @@ class IncuversUI {
         #endif
         lcd->setCursor(0, rowI);
         lcd->print(" CO2: ");
-        if (incSet->getCO2Mode() > 0 && incSet->getCO2Level() >= 0) {
-          lcd->print(incSet->getCO2Level(), 1);
+        if (incSet->getCO2Mode() > 0 && incSet->getCO2Module()->getCO2Level() >= 0) {
+          lcd->print(incSet->getCO2Module()->getCO2Level(), 1);
           lcd->print("%    ");
-          if (incSet->getCO2Level() < 10.0) {
+          if (incSet->getCO2Module()->getCO2Level() < 10.0) {
             lcd->print(" ");
           }
-          lcd->print(GetIndicator(incSet->isCO2Open(), incSet->isCO2Stepping(), false, false)); 
-        } else if (incSet->getCO2Level() < 0){
+          lcd->print(GetIndicator(incSet->getCO2Module()->isCO2Open(), incSet->getCO2Module()->isCO2Stepping(), false, false)); 
+        } else if (incSet->getCO2Module()->getCO2Level() < 0){
           lcd->print(F("Error   "));
         } else {
           lcd->print(F("Disabled"));
@@ -83,14 +83,14 @@ class IncuversUI {
         #endif
         lcd->setCursor(0, rowI);
         lcd->print("  O2: ");
-        if (incSet->getO2Mode() > 0 && incSet->getO2Level() >= 0) {
-          lcd->print(incSet->getO2Level(), 1);
+        if (incSet->getO2Mode() > 0 && incSet->getO2Module()->getO2Level() >= 0) {
+          lcd->print(incSet->getO2Module()->getO2Level(), 1);
           lcd->print("%    ");
-          if (incSet->getO2Level() < 10.0) {
+          if (incSet->getO2Module()->getO2Level() < 10.0) {
             lcd->print(" ");
           }
-          lcd->print(GetIndicator(incSet->isO2Open(), incSet->isO2Stepping(), false, false)); 
-        } else if (incSet->getO2Level() < 0){
+          lcd->print(GetIndicator(incSet->getO2Module()->isNOpen(), incSet->getO2Module()->isNStepping(), false, false)); 
+        } else if (incSet->getO2Module()->getO2Level() < 0){
           lcd->print(F("Error   "));
         } else {
           lcd->print(F("Disabled"));
@@ -119,64 +119,39 @@ class IncuversUI {
       // TODO: Fix this UI display to support lighting.
       lcd->setCursor(0, 0);
       lcd->print("T.");
-      lcd->print(GetIndicator(incSet->isDoorOn(), incSet->isDoorStepping(), true, false));
-      lcd->print(GetIndicator(incSet->isChamberOn(), incSet->isChamberStepping(), false, false));
+      lcd->print(GetIndicator(incSet->getHeatModule()->isDoorOn(), incSet->getHeatModule()->isDoorStepping(), true, false));
+      lcd->print(GetIndicator(incSet->getHeatModule()->isChamberOn(), incSet->getHeatModule()->isChamberStepping(), false, false));
       lcd->print("  CO2");
-      lcd->print(GetIndicator(incSet->isCO2Open(), incSet->isCO2Stepping(), false, false)); 
+      lcd->print(GetIndicator(incSet->getCO2Module()->isCO2Open(), incSet->getCO2Module()->isCO2Stepping(), false, false)); 
       lcd->print("   O2");
-      lcd->print(GetIndicator(incSet->isO2Open(), incSet->isO2Stepping(), false, false)); 
+      lcd->print(GetIndicator(incSet->getO2Module()->isNOpen(), incSet->getO2Module()->isNStepping(), false, false)); 
       
       lcd->setCursor(0, 1);
-      if (incSet->getChamberTemperature() > 60.0 || incSet->getChamberTemperature() < -20.0) {
+      if (incSet->getHeatModule()->getChamberTemperature() > 60.0 || incSet->getHeatModule()->getChamberTemperature() < -20.0) {
         lcd->print(CentreStringForDisplay("err", 5));
       } else {
-        lcd->print(CentreStringForDisplay(String(incSet->getChamberTemperature(), 1), 5));
+        lcd->print(CentreStringForDisplay(String(incSet->getHeatModule()->getChamberTemperature(), 1), 5));
       }
-      if (incSet->getCO2Level() < 0) {
+      if (incSet->getCO2Module()->getCO2Level() < 0) {
         lcd->print(CentreStringForDisplay("err", 6));
       } else {
-        lcd->print(CentreStringForDisplay(String(incSet->getCO2Level(), 1), 6));
+        lcd->print(CentreStringForDisplay(String(incSet->getCO2Module()->getCO2Level(), 1), 6));
       }
-      if (incSet->getO2Level() < 0) {
+      if (incSet->getO2Module()->getO2Level() < 0) {
         lcd->print(CentreStringForDisplay("err", 5));
       } else {
-        lcd->print(CentreStringForDisplay(String(incSet->getO2Level(), 1), 5));
+        lcd->print(CentreStringForDisplay(String(incSet->getO2Module()->getO2Level(), 1), 5));
       }
     }
 
     void SerialPrintStatus() {
-      Serial.print(ConvertMillisToReadable(millis()));
-      Serial.print(F(" ID "));              // Identification
-      Serial.print(incSet->getSerial());
-      Serial.print(F(" TC "));              // Temperature, chamber
-      Serial.print(incSet->getChamberTemperature(), 2);
-      Serial.print(F(" TD "));              // Temperature, door
-      Serial.print(incSet->getDoorTemperature(), 2);
-      Serial.print(F(" TO "));              // Temperature, other
-      Serial.print(incSet->getOtherTemperature(), 2);
-      Serial.print(F(" CO "));              // CO2 level reading
-      Serial.print(incSet->getCO2Level(), 2);
-      Serial.print(F(" OO "));              // O2 level reading
-      Serial.print(incSet->getO2Level(), 2);
-      Serial.print(F(" AP "));              // Active peripherals
-      Serial.print(GetIndicator(incSet->isDoorOn(), incSet->isDoorStepping(), false, true));
-      Serial.print(GetIndicator(incSet->isChamberOn(), incSet->isChamberStepping(), false, true));
-      Serial.print(GetIndicator(incSet->isCO2Open(), incSet->isCO2Stepping(), false, true));
-      Serial.print(GetIndicator(incSet->isO2Open(), incSet->isO2Stepping(), false, true));
-      Serial.print(incSet->getLightModule()->GetSerialAPIndicator());
-      Serial.print(F(" OA "));              // Orchestrated alarms
-      Serial.print(GetIndicator(incSet->isHeatAlarmed(), false, false, true));
-      Serial.print(GetIndicator(incSet->isCO2Alarmed(), false, false, true));
-      Serial.print(GetIndicator(incSet->isO2Alarmed(), false, false, true));
-      #ifdef DEBUG_MEMORY
-      Serial.print(F(" FM "));              // Free memory
-      Serial.print(freeMemory());
+      #ifdef SHOWSERIALSTATUS
+        Serial.println(incSet->GenerateStatusLine(false));
       #endif
-      Serial.println();
     }
     
     void AlarmOrchestrator() {
-      if ((incSet->isHeatAlarmed() || incSet->isCO2Alarmed() || incSet->isO2Alarmed())/* && incSet->getAlarmMode() == 2*/) {
+      if ((incSet->getHeatModule()->isAlarmed() || incSet->getCO2Module()->isAlarmed() || incSet->getO2Module()->isAlarmed())/* && incSet->getAlarmMode() == 2*/) {
         incSet->MakeSafeState();
         Wire.beginTransmission(0x20); // Connect to chip
         Wire.write(0x13);             // Address port B
@@ -939,7 +914,7 @@ class IncuversUI {
       this->lcd->setCursor(0,0);
       this->lcd->print(F("Incuvers Model 1"));
       this->lcd->setCursor(0,1);
-      this->lcd->print(CentreStringForDisplay(F("V1.11"),16));
+      this->lcd->print(CentreStringForDisplay(F(SOFTWARE_VER_STRING),16));
       delay(1000);
       this->lcd->clear();
   

@@ -248,7 +248,6 @@ class IncuversHeatingSystem {
 
     void DoQuickTick() {
       this->EMHandleChamber.DoQuickTick();
-      // Only doing Chamber as we are only Jolt-Ticking the door.
       this->EMHandleDoor.DoQuickTick();
     }
     
@@ -256,9 +255,6 @@ class IncuversHeatingSystem {
       this->GetTemperatureReadings();
       this->EMHandleChamber.DoUpdateTick(this->tempChamber);
       this->EMHandleDoor.DoUpdateTick(this->tempDoor);
-      //if (!this->EMHandleChamber.isActive()) {
-        //this->EMHandleDoor.DoJoltTick(this->tempDoor);
-      //}
     }
 
     float getOtherTemperature() {

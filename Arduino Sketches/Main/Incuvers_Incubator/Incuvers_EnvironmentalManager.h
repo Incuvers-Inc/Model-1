@@ -201,7 +201,8 @@ class IncuversEM {
 
     void Enable() {
       #ifdef DEBUG_EM
-        Serial.println(F("Enablement"));
+        Serial.print((this->ident));
+        Serial.println(F(": Enablement"));
       #endif
 
       this->activeManagement = true;
@@ -209,7 +210,8 @@ class IncuversEM {
 
     void Disable() {
       #ifdef DEBUG_EM
-        Serial.println(F("Disablement"));
+        Serial.print((this->ident));
+        Serial.println(F(": Disablement"));
       #endif
       this->activeManagement = false;
 
@@ -220,7 +222,10 @@ class IncuversEM {
 
     void UpdateDesiredLevel(float level) {
       #ifdef DEBUG_EM
-        Serial.println(F("UpdateLevel"));
+        Serial.print((this->ident));
+        Serial.print(F(": UpdateLevel: "));
+        Serial.println((level));
+           
       #endif
       if (this->additiveElement) {
         if (level < this->desiredLevel) {
@@ -239,7 +244,8 @@ class IncuversEM {
 
     void DoUpdateTick(float newLevel) {
       #ifdef DEBUG_EM
-        Serial.print(F("UpdateTick @ "));
+        Serial.print((this->ident));
+        Serial.print(F(": UpdateTick @ "));
         Serial.print(newLevel);
         Serial.println(F("!"));
       #endif

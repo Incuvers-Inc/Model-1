@@ -1,16 +1,22 @@
 /*
  * INCUVERS INCUBATOR 
- *    Date:    October 2018
- *    Software version: 1.11
- *    Hardware version: 1.0.0
+ *    Date:    February 2019
+ *    Software version: 1.12
+ *    Hardware version: 1.0.2
  *    http://incuvers.com/   
  *    
  *    Incuvers team:
  *        Dr. Sebastian Hadjiantoniou
+ *        David Sean
  *        Tim Spekkens
  */
 
+#define SOFTWARE_VER_STRING "v1.12 (01)"
+
  /* Changelog
+  * 
+  * 1.12 - Added support for PiLink write-back.
+  *      - Modified the serial output format to match the PiLink input format
   * 
   * 1.11 - General code clean up and housekeeping.
   *      - Switched serial sensors from streaming mode to on-demand polling.
@@ -18,6 +24,7 @@
   *      - Moved common environmental management code into its own class.
   *      - Moved to support Control Board 1.0.0 / ATMEGA 2560 controller.
   *      - Added some power management features to limit the current draw.
+  *      - Added support for PiLink.
   *      
   * 1.10 - Added support for chamber lighting control.
   *      - Started making modules/skeletons to save on memory in Atmega328 implementations.
@@ -49,29 +56,35 @@
 // Due to the long overflow and millis() reset, which would cause issues for our timing, we elect to reboot the incubator after one month of uptime.
 #define RESET_AFTER_DELTA 2678400000
 
-// Use the capabilities of the ATMEGA 2560 microcontroller (hardware serial for sensors, etc)
+// Use the capabilities of the ATMEGA 2560 microcontroller (hardware serial for sensors, PiLink, etc)
 #define USE_2560 true
+
+
+// Where to find our RaspberryPi; "Serial1" for header interface, "Serial" for USB connection
+#define PILINK_SERIALHANDLE Serial
+// If using the USB connection for PILINK, comment out both of the following.  If using PiHeader but don't want the serial spam, only comment out the second line
+//#define SERIALPILINKSETTINGS 9600, SERIAL_8E2
+//#define SHOWSERIALSTATUS true
 
 // Debugging definitions, comment out to disable
 //#define DEBUG_GENERAL true
 //#define DEBUG_SERIAL true
 //#define DEBUG_EEPROM true
 //#define DEBUG_UI true
-#define DEBUG_EM true
+//#define DEBUG_EM true
 //#define DEBUG_CO2 true
 //#define DEBUG_O2 true
 //#define DEBUG_TEMP true
+#define DEBUG_PILINK true
 //#define DEBUG_LIGHT true
 //#define DEBUG_MEMORY true
 
-// Build/upload-time options - comment out unneeded modules in order to save program space.  Please only ensure only one O2 module is included at any given time.
+// Build/upload-time options - comment out unneeded modules in order to save program space.  Please ensure only one O2 module is included at any given time.
 #define INCLUDE_O2_SERIAL true
 //#define INCLUDE_O2_MODBUS true
 //#define INCLUDE_O2_ANALOG true
 #define INCLUDE_CO2 true
-#define INCLUDE_TEMP true
 #define INCLUDE_LIGHT true
-#define INCLUDE_PILINK true
 
 // Hardwired settings
 #define PINASSIGN_ONEWIRE_BUS 4
@@ -86,6 +99,10 @@
 #ifndef USE_2560 
   // Serial library used for querying the CO2/O2 sensor (ATMEGA 328 compatibility)
   #include "SoftwareSerial.h"
+#endif
+#ifdef USE_2560
+  // CRC32 library by Christopher Baker used by the PiLink module
+  #include <CRC32.h>
 #endif
 // Wire and LiquidTWI2 libraries used for the LCD display and button interface
 #include "Wire.h"
@@ -114,12 +131,17 @@
 #ifdef INCLUDE_O2_ANALOG
  #include "Env_O2_Luminox_Analog.h"
 #endif
+#ifdef INCLUDE_CO2
+  #include "Env_CO2_COZIR.h"
+#endif
+#ifdef INCLUDE_LIGHT
+  #include "Env_Light.h"
+#endif
+
 #include "Env_Heat.h"
-#include "Env_CO2_COZIR.h"
-#include "Opt_Light.h"
 #include "Incuvers_Settings.h"
-#include "Opt_PiLink.h"
 #include "Incuvers_UI.h"
+#include "Incuvers_PiLink.h"
 
 // Globals
 IncuversSettingsHandler* iSettings;

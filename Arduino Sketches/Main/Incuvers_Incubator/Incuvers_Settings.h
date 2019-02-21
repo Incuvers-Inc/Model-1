@@ -395,6 +395,52 @@ class IncuversSettingsHandler {
       return this->incO2;
     }
 
+    String GenerateStatusLine(bool includeCRC)
+    {
+      // General Identification
+      String piLink = String("TS|" + String(millis(), DEC));
+      piLink = String(piLink + F("&ID|") + String(this->settingsHardware.serial));              // Identification
+      piLink = String(piLink + F("&IV|") + F(SOFTWARE_VER_STRING));                             // Ident Version
+      // Heating/Fan system
+      piLink = String(piLink + F("&FM|") + this->settingsHolder.fanMode);                       // Fan, mode
+      piLink = String(piLink + F("&TM|") + String(this->settingsHolder.heatMode, DEC));         // Temperature, mode
+      piLink = String(piLink + F("&TP|") + String(this->settingsHolder.heatSetPoint, 2));       // Temperature, setpoint
+      piLink = String(piLink + F("&TC|") + String(incHeat->getChamberTemperature(), 2));        // Temperature, chamber
+      piLink = String(piLink + F("&TD|") + incHeat->getDoorTemperature());                      // Temperature, door
+      piLink = String(piLink + F("&TO|") + incHeat->getOtherTemperature());                     // Temperature, other
+      piLink = String(piLink + F("&TS|") + String(GetIndicator(incHeat->isDoorOn(), incHeat->isDoorStepping(), false, true)) + String(GetIndicator(incHeat->isChamberOn(), incHeat->isChamberStepping(), false, true)));  // Temperature, status
+      piLink = String(piLink + F("&TA|") + String(GetIndicator(incHeat->isAlarmed(), false, false, true)));                                                                                                           // Temperature, alarms
+      // CO2 system
+      piLink = String(piLink + F("&CM|") + String(this->settingsHolder.CO2Mode, DEC));          // CO2, mode
+      piLink = String(piLink + F("&CP|") + String(this->settingsHolder.CO2SetPoint, 2));        // CO2, setpoint
+      piLink = String(piLink + F("&CC|") + String(incCO2->getCO2Level(), 2));                   // CO2, reading
+      piLink = String(piLink + F("&CS|") + GetIndicator(incCO2->isCO2Open(), incCO2->isCO2Stepping(), false, true));  // CO2, status
+      piLink = String(piLink + F("&CA|") + GetIndicator(incCO2->isAlarmed(), false, false, true));                 // CO2, alarms
+      // O2 system
+      piLink = String(piLink + F("&OM|") + String(this->settingsHolder.O2Mode, DEC));         // O2, mode
+      piLink = String(piLink + F("&OP|") + String(this->settingsHolder.O2SetPoint, 2));       // O2, setpoint
+      piLink = String(piLink + F("&OC|") + String(incO2->getO2Level(), 2));                     // O2, reading
+      piLink = String(piLink + F("&OS|") + GetIndicator(incO2->isNOpen(), incO2->isNStepping(), false, true));  // CO2, status
+      piLink = String(piLink + F("&OA|") + GetIndicator(incO2->isAlarmed(), false, false, true));               // CO2, alarms
+      // Options
+      piLink = String(piLink + F("&LM|") + String(this->settingsHolder.lightMode, DEC));      // Light Mode
+      piLink = String(piLink + F("&LS|") + incLight->GetSerialAPIndicator());                   // Light System
+      // Debugging
+      piLink = String(piLink + F("&FM|") + String(freeMemory(), DEC));                          // Free memory
+
+      if (includeCRC) {
+        CRC32 crc;
+        
+        for (int i = 0; i < piLink.length(); i++) {
+          crc.update(piLink[i]);
+        }
+  
+        piLink = String(String(piLink.length(), DEC) + F("*") + String(crc.finalize(), HEX) + F("$") + piLink);   // CRC to detect corrupted entries
+      }
+
+      return piLink;
+    }
+    
     int getPersonalityCount() {
       return personalityCount;
     }
@@ -417,26 +463,6 @@ class IncuversSettingsHandler {
       this->incHeat->UpdateFanMode(mode);
     }
     
-    float getDoorTemperature() {
-      return incHeat->getDoorTemperature();
-    }
-
-    float getOtherTemperature() {
-      return incHeat->getOtherTemperature();
-    }
-    
-    boolean isDoorOn() {
-      return incHeat->isDoorOn();
-    }
-
-    boolean isDoorStepping() {
-      return incHeat->isDoorStepping();
-    }
-
-    float getChamberTemperature() {
-      return incHeat->getChamberTemperature();
-    }
-
     float getTemperatureSetPoint() {
       return this->settingsHolder.heatSetPoint;
     }
@@ -444,14 +470,6 @@ class IncuversSettingsHandler {
     void setTemperatureSetPoint(float newValue) {
       this->settingsHolder.heatSetPoint = newValue;
       this->incHeat->SetSetPoint(this->settingsHolder.heatSetPoint);
-    }
-
-    boolean isChamberOn() {
-      return incHeat->isChamberOn();
-    }
-
-    boolean isChamberStepping() {
-      return incHeat->isChamberStepping();
     }
 
     int getCO2Mode() {
@@ -463,10 +481,6 @@ class IncuversSettingsHandler {
       this->incCO2->UpdateMode(mode);
     }
     
-    float getCO2Level() {
-      return incCO2->getCO2Level();
-    }
-
     float getCO2SetPoint() {
       return this->settingsHolder.CO2SetPoint;
     }
@@ -474,14 +488,6 @@ class IncuversSettingsHandler {
     void setCO2SetPoint(float newValue) {
       this->settingsHolder.CO2SetPoint = newValue;
       this->incCO2->SetSetPoint(this->settingsHolder.CO2SetPoint);
-    }
-
-    boolean isCO2Open() {
-      return incCO2->isCO2Open();
-    }
-
-    boolean isCO2Stepping() {
-      return incCO2->isCO2Stepping();
     }
 
     int getO2Mode() {
@@ -493,10 +499,6 @@ class IncuversSettingsHandler {
       this->incO2->UpdateMode(mode);
     }
     
-    float getO2Level() {
-      return incO2->getO2Level();
-    }
-
     float getO2SetPoint() {
       return this->settingsHolder.O2SetPoint;
     }
@@ -504,14 +506,6 @@ class IncuversSettingsHandler {
     void setO2SetPoint(float newValue) {
       this->settingsHolder.O2SetPoint = newValue;
       this->incO2->SetSetPoint(this->settingsHolder.O2SetPoint);
-    }
-
-    boolean isO2Open() {
-      return incO2->isNOpen();
-    }
-
-    boolean isO2Stepping() {
-      return incO2->isNStepping();
     }
 
     String getHardware() {
@@ -561,18 +555,6 @@ class IncuversSettingsHandler {
       return settingsHardware.lightingSupport;
     }
         
-    boolean isHeatAlarmed() {
-      return incHeat->isAlarmed();
-    }
-
-    boolean isCO2Alarmed() {
-      return incCO2->isAlarmed();
-    }
-
-    boolean isO2Alarmed() {
-      return incO2->isAlarmed();
-    }
-
     void ResetAlarms() {
       incHeat->ResetAlarms();
       incCO2->ResetAlarms();
