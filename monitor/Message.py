@@ -121,7 +121,7 @@ class Sensors():
         return str(toReturn)
 
     def json_sensorframe(self):
-        """ JSON object conaining arduino serial message
+        """ JSON object containing arduino serial message
         Returns a JSON formated string of the current state
         Args:
             None
@@ -157,31 +157,46 @@ class Sensors():
         ''' Check if the checksum passed
         recompute message checksum and compares with appended hash
         Args:
-            string (str): a string containing the message, a separation
-            indicator: '||||', follwed by the CRC hash.
+            string (str): a string containing the message, having the following
+                          format: Len*CRC32$Param|Value&Param|Value
+
         '''
-        lineSplit = string.decode().split('||||')
-        partCount = len(lineSplit)
-        if partCount == 2:
-            calcCRC = binascii.crc32(lineSplit[0].encode())
-            if format(calcCRC, 'X') == lineSplit[1].rstrip():
-                if (self.verbosity == 1):
-                    print("CRC32 matches")
-                return True
-            else:
-                if (self.verbosity == 1):
-                    print(
-                        "CRC32 Fail: calculated " +
-                        format(
-                            calcCRC,
-                            'X') +
-                        " but received " +
-                        lineSplit[1])
-                return False
+
+
+        if string.decode().len()>92:
+            if (self.verbosity == 1):
+                print("Length Fail: received string is too long")
+            return False
+
+        lineSplit = string.decode().split('*')
+        if len(lineSplit) != 2:
+            if (self.verbosity == 1):
+                print("Corrupt message: while splitting with length special character '*' ")
+            return False
+
+        # extract the Len
+        msg_len=lineSplit[0]
+        lineSplit = lineSplit[1].decode().split('$')
+        if len(lineSplit) != 2:
+            if (self.verbosity == 1):
+                print("Corrupt message: while splitting with length special character '$' ")
+            return False
+        # extract the CRC
+        msg_crc=lineSplit[0]
+        calcCRC = binascii.crc32(lineSplit[0].encode())
+        if format(calcCRC, 'X') == lineSplit[1].rstrip():
+            if (self.verbosity == 1):
+                print("CRC32 matches")
+            return True
         else:
             if (self.verbosity == 1):
-                print("CRC32 Fail: wrong number of parts")
+                print(
+                    "CRC32 Fail: calculated " +
+                    format(calcCRC,'X') +
+                    " but received " +
+                    lineSplit[1])
             return False
+
 
     def save_message_dict(self, msg):
         '''
@@ -192,15 +207,17 @@ class Sensors():
         Only use a message that passed the checksum!
         NOTE: The time stamp from the arduino is replaced here
         '''
-        msg_serial = msg.split("||||")[0]
-        msg_serial = msg_serial.split(" ")
+
+        msg_serial = msg.decode().split('$')[1]
         self.sensorframe = {}
+        for params in msg_serial.split('&'):
+            kvp=params.split("|")
+            if len(kvp) != 2:
+                print("ERROR: bad key-value pair")
+            else:
+                self.sensorframe[kvp[0]] = kvp[1]
         self.sensorframe['time'] = time.strftime(
             "%Y-%m-%d %H:%M:%S", time.gmtime())
-        for i in range(1, len(msg_serial) - 1, 2):
-                # do not add the ID field!
-            if not msg_serial[i] == 'ID':
-                self.sensorframe[msg_serial[i]] = msg_serial[i + 1]
         return
 
 
