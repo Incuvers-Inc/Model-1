@@ -234,6 +234,7 @@ if __name__ == '__main__':
         del iface
 
     monitor_serial = False
+    monitor_serial = True
     if monitor_serial:
         mon = Sensors()
         mon.verbosity = 1
