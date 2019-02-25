@@ -435,8 +435,10 @@ class IncuversSettingsHandler {
           crc.update(piLink[i]);
         }
   
-        piLink = String(String(piLink.length(), DEC) + F("*") + String(crc.finalize(), HEX) + F("$") + piLink);   // CRC to detect corrupted entries
+        piLink = String(String(piLink.length(), DEC) + F("~") + String(crc.finalize(), HEX) + F("$") + piLink);   // CRC to detect corrupted entries
       }
+ 
+      Serial.println(piLink);
 
       return piLink;
     }
@@ -567,7 +569,3 @@ class IncuversSettingsHandler {
     
 
 };
-
-
-
-
