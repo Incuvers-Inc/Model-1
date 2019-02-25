@@ -139,7 +139,7 @@ class Sensors():
             print("starting monitor")
         while True:
             try:
-                line = self.arduino_link.serial_connection.readline().rstrip().encode("utf-8")
+                line = self.arduino_link.serial_connection.readline().rstrip()
                 if self.checksum_passed(line):
                     if (self.verbosity == 1):
                         print("checksum passed")
@@ -153,7 +153,7 @@ class Sensors():
                 print('Error: ', sys.exc_info()[0])
                 # return
 
-    def checksum_passed(self, string):
+    def checksum_passed(self, msg):
         ''' Check if the checksum passed
         recompute message checksum and compares with appended hash
         Args:
@@ -166,22 +166,25 @@ class Sensors():
         #    if (self.verbosity == 1):
         #        print("Length Fail: received string is too long: found {}".format(len(string.decode())))
         #    return False
-        lineSplit = string.decode().split('~')
-        if len(lineSplit) != 2:
+
+        # pop the Len
+        msg = msg.decode().split('~')
+        if len(msg) != 2:
             if (self.verbosity == 1):
                 print("Corrupt message: while splitting with length special character '~' ")
             return False
+        msg_len=msg[0]
 
-        # extract the Len
-        msg_len=lineSplit[0]
-        lineSplit = lineSplit[1].decode().split('$')
-        if len(lineSplit) != 2:
+        # pop the CRC32
+        msg = msg[1].decode().split('$')
+        if len(msg) != 2:
             if (self.verbosity == 1):
                 print("Corrupt message: while splitting with length special character '$' ")
             return False
-        # extract the CRC
-        msg_crc=lineSplit[0]
-        calcCRC = binascii.crc32(lineSplit[1].rstrip()) & 0xffffffff
+        msg_crc=msg[0]
+
+        # compare CRC32
+        calcCRC = binascii.crc32(msg[1].rstrip()) & 0xffffffff
         if format(calcCRC, 'x') == msg_crc:
             if (self.verbosity == 1):
                 print("CRC32 matches")
@@ -206,10 +209,9 @@ class Sensors():
         NOTE: The time stamp from the arduino is replaced here
         '''
 
-        msg = msg.decode().split('~')[1]
-        msg = msg.split('$')[1]
+        msg_sensors = msg.split('$')[1]
         self.sensorframe = {}
-        for params in msg.split('&'):
+        for params in msg_sensors.split('&'):
             kvp=params.split("|")
             if len(kvp) != 2:
                 print("ERROR: bad key-value pair")
