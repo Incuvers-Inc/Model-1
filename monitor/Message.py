@@ -157,7 +157,7 @@ class Sensors():
                 print('Error: ', sys.exc_info()[0])
                 # return
 
-    def pop_param(msg, char):
+    def pop_param(self, msg, char):
         ''' pop
         Args:
             char (char): a special character occuring only once
@@ -167,6 +167,7 @@ class Sensors():
             When there is more than one occurence of char (or when it is not present),
             returns the tuple (False, msg)
         '''
+        
         msg = msg.decode().split(char)
         if len(msg) != 2:
             if (self.verbosity == 1):
@@ -182,18 +183,17 @@ class Sensors():
                           format: Len~CRC32$Param|Value&Param|Value
 
         '''
+        # pop the Len
+        msg_len, msg = self.pop_param(msg, '~')
+        if msg_len == False: return False
 
         # pop the Len
-        len, msg = pop_param(msg, '~')
-        if len == False return False
-
-        # pop the Len
-        crc, msg = pop_param(msg, '$')
-        if crc == False return False
+        msg_crc, msg = self.pop_param(msg, '$')
+        if msg_crc == False: return False
 
         # compare CRC32
         calcCRC = binascii.crc32(msg.rstrip()) & 0xffffffff
-        if format(calcCRC, 'x') == crc:
+        if format(calcCRC, 'x') == msg_crc:
             if (self.verbosity == 1):
                 print("CRC32 matches")
             return True
@@ -203,7 +203,7 @@ class Sensors():
                     "CRC32 Fail: calculated " +
                     format(calcCRC, 'x') +
                     " but received " +
-                    crc)
+                    msg_crc)
             return False
 
     def save_message_dict(self, msg):
@@ -217,9 +217,9 @@ class Sensors():
         '''
 
         # pop the Len and CRC out
-        tmp, msg = pop_param(msg, '$')
+        tmp, msg = self.pop_param(msg, '$')
 
-        if tmp == False return False
+        if tmp == False: return False
         self.sensorframe = {}
         for params in msg.split('&'):
             kvp = params.split("|")
