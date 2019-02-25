@@ -29,65 +29,68 @@ class Interface():
     Attributes:
         serial_connection (:obj:`Serial`): serial connection from GPIO
     """
+
     def __init__(self):
-      ''' Initialization
-      Args:
-        None
-      '''
-      self.serial_connection = serial.Serial('/dev/serial0', 9600)
+        ''' Initialization
+        Args:
+          None
+        '''
+        self.serial_connection = serial.Serial('/dev/serial0', 9600)
 
     def connects_to_internet(self, host="8.8.8.8", port=53, timeout=3):
-      """ Tests internet connectivity
-      Test intenet connectivity by checking with Google
-      Host: 8.8.8.8 (google-public-dns-a.google.com)
-      OpenPort: 53/tcp
-      Service: domain (DNS/TCP)
-      Args:
-        host (str): the host to test connection
-        port (int): the port to use
-        timeout (timeout): the timeout value (in seconds)
-      """
+        """ Tests internet connectivity
+        Test intenet connectivity by checking with Google
+        Host: 8.8.8.8 (google-public-dns-a.google.com)
+        OpenPort: 53/tcp
+        Service: domain (DNS/TCP)
+        Args:
+          host (str): the host to test connection
+          port (int): the port to use
+          timeout (timeout): the timeout value (in seconds)
+        """
 
-      try:
-        socket.setdefaulttimeout(timeout)
-        socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
-        return True
-      except Exception as err:
-        print(err.message)
-        return False
+        try:
+            socket.setdefaulttimeout(timeout)
+            socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
+            return True
+        except Exception as err:
+            print(err.message)
+            return False
 
     def get_serial_number(self):
-      """ Get uniqeu serial number
-      Get a unique serial number from the cpu
-      Args:
-        None
-      """
-      serial = "0000000000"
-      try:
-        with open('/proc/cpuinfo','r') as fp:
-          for line in fp:
-            if line[0:6]=='Serial':
-              serial = line[10:26]
-        if serial == "0000000000":
-          raise TypeError('Could not extract serial from /proc/cpuinfo')
-      except FileExistsError as err :
+        """ Get uniqeu serial number
+        Get a unique serial number from the cpu
+        Args:
+          None
+        """
         serial = "0000000000"
-        print(err.message)
+        try:
+            with open('/proc/cpuinfo', 'r') as fp:
+                for line in fp:
+                    if line[0:6] == 'Serial':
+                        serial = line[10:26]
+            if serial == "0000000000":
+                raise TypeError('Could not extract serial from /proc/cpuinfo')
+        except FileExistsError as err:
+            serial = "0000000000"
+            print(err.message)
 
-      except TypeError as err :
-        serial = "0000000000"
-        print(err.message)
-      return serial
+        except TypeError as err:
+            serial = "0000000000"
+            print(err.message)
+        return serial
 
     def get_mac_address(self):
-      """ Get the ethernet MAC address
-      This returns in the MAC address in the canonical human-reable form
-      Args:
-        None
-      """
-      hex = uuid.getnode()
-      formatted = ':'.join(['{:02x}'.format((hex >> ele) & 0xff) for ele in range(0,8*6,8)][::-1])
-      return formatted
+        """ Get the ethernet MAC address
+        This returns in the MAC address in the canonical human-reable form
+        Args:
+          None
+        """
+        hex = uuid.getnode()
+        formatted = ':'.join(['{:02x}'.format((hex >> ele) & 0xff)
+                              for ele in range(0, 8*6, 8)][::-1])
+        return formatted
+
 
 class Sensors():
     """ Class to handle sensor communication
@@ -99,6 +102,7 @@ class Sensors():
         lock (): Instance of threading Lock to
         monitor (): Process that continuously read incomming serial messages
     """
+
     def __init__(self):
         """ Initialization
         """
@@ -162,7 +166,7 @@ class Sensors():
 
         '''
 
-        #if len(string.decode())>92:
+        # if len(string.decode())>92:
         #    if (self.verbosity == 1):
         #        print("Length Fail: received string is too long: found {}".format(len(string.decode())))
         #    return False
@@ -173,7 +177,7 @@ class Sensors():
             if (self.verbosity == 1):
                 print("Corrupt message: while splitting with length special character '~' ")
             return False
-        msg_len=msg[0]
+        msg_len = msg[0]
 
         # pop the CRC32
         msg = msg[1].decode().split('$')
@@ -181,7 +185,7 @@ class Sensors():
             if (self.verbosity == 1):
                 print("Corrupt message: while splitting with length special character '$' ")
             return False
-        msg_crc=msg[0]
+        msg_crc = msg[0]
 
         # compare CRC32
         calcCRC = binascii.crc32(msg[1].rstrip()) & 0xffffffff
@@ -193,11 +197,10 @@ class Sensors():
             if (self.verbosity == 1):
                 print(
                     "CRC32 Fail: calculated " +
-                    format(calcCRC,'x') +
+                    format(calcCRC, 'x') +
                     " but received " +
                     msg_crc)
             return False
-
 
     def save_message_dict(self, msg):
         '''
@@ -212,7 +215,7 @@ class Sensors():
         msg_sensors = msg.split('$')[1]
         self.sensorframe = {}
         for params in msg_sensors.split('&'):
-            kvp=params.split("|")
+            kvp = params.split("|")
             if len(kvp) != 2:
                 print("ERROR: bad key-value pair")
             else:
@@ -230,7 +233,8 @@ if __name__ == '__main__':
         print("Hardware serial number: {}".format(iface.get_serial_number()))
         print("Hardware address (ethernet): {}".format(iface.get_mac_address()))
         print("Can connect to the internet: {}".format(iface.connects_to_internet()))
-        print("Can contact the mothership: {}".format(iface.connects_to_internet(host='35.183.143.177', port=80)))
+        print("Can contact the mothership: {}".format(
+            iface.connects_to_internet(host='35.183.143.177', port=80)))
         print("Has serial connection with Arduino: {}".format(iface.serial_connection.is_open))
         del iface
 
@@ -239,11 +243,12 @@ if __name__ == '__main__':
     if monitor_serial:
         mon = Sensors()
         mon.verbosity = 1
-        print("Has serial connection with Arduino: {}".format(mon.arduino_link.serial_connection.is_open))
+        print("Has serial connection with Arduino: {}".format(
+            mon.arduino_link.serial_connection.is_open))
         print("Displaying serial data")
         while True:
             time.sleep(5)
-            #print("trying...")
+            # print("trying...")
             print(mon.sensorframe)
-            #print(mon.arduino_link.serial_connection.readline())
+            # print(mon.arduino_link.serial_connection.readline())
         del mon
