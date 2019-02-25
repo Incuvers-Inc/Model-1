@@ -139,7 +139,7 @@ class Sensors():
             print("starting monitor")
         while True:
             try:
-                line = self.arduino_link.serial_connection.readline()
+                line = self.arduino_link.serial_connection.readline().rstrip().encode("utf-8")
                 if self.checksum_passed(line):
                     if (self.verbosity == 1):
                         print("checksum passed")
@@ -162,16 +162,14 @@ class Sensors():
 
         '''
 
-
-        if string.decode().len()>92:
-            if (self.verbosity == 1):
-                print("Length Fail: received string is too long")
-            return False
-
-        lineSplit = string.decode().split('*')
+        #if len(string.decode())>92:
+        #    if (self.verbosity == 1):
+        #        print("Length Fail: received string is too long: found {}".format(len(string.decode())))
+        #    return False
+        lineSplit = string.decode().split('~')
         if len(lineSplit) != 2:
             if (self.verbosity == 1):
-                print("Corrupt message: while splitting with length special character '*' ")
+                print("Corrupt message: while splitting with length special character '~' ")
             return False
 
         # extract the Len
@@ -183,8 +181,8 @@ class Sensors():
             return False
         # extract the CRC
         msg_crc=lineSplit[0]
-        calcCRC = binascii.crc32(lineSplit[0].encode())
-        if format(calcCRC, 'X') == lineSplit[1].rstrip():
+        calcCRC = binascii.crc32(lineSplit[1].rstrip()) & 0xffffffff
+        if format(calcCRC, 'x') == msg_crc:
             if (self.verbosity == 1):
                 print("CRC32 matches")
             return True
@@ -192,9 +190,9 @@ class Sensors():
             if (self.verbosity == 1):
                 print(
                     "CRC32 Fail: calculated " +
-                    format(calcCRC,'X') +
+                    format(calcCRC,'x') +
                     " but received " +
-                    lineSplit[1])
+                    msg_crc)
             return False
 
 
@@ -208,15 +206,16 @@ class Sensors():
         NOTE: The time stamp from the arduino is replaced here
         '''
 
-        msg_serial = msg.decode().split('$')[1]
+        msg = msg.decode().split('~')[1]
+        msg = msg.split('$')[1]
         self.sensorframe = {}
-        for params in msg_serial.split('&'):
+        for params in msg.split('&'):
             kvp=params.split("|")
             if len(kvp) != 2:
                 print("ERROR: bad key-value pair")
             else:
-                self.sensorframe[kvp[0]] = kvp[1]
-        self.sensorframe['time'] = time.strftime(
+                self.sensorframe[kvp[0].encode("utf-8")] = kvp[1].encode("utf-8")
+        self.sensorframe['Time'] = time.strftime(
             "%Y-%m-%d %H:%M:%S", time.gmtime())
         return
 
@@ -242,5 +241,7 @@ if __name__ == '__main__':
         print("Displaying serial data")
         while True:
             time.sleep(5)
-            print(mon)
+            #print("trying...")
+            print(mon.sensorframe)
+            #print(mon.arduino_link.serial_connection.readline())
         del mon
