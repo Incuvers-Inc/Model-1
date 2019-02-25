@@ -29,65 +29,68 @@ class Interface():
     Attributes:
         serial_connection (:obj:`Serial`): serial connection from GPIO
     """
+
     def __init__(self):
-      ''' Initialization
-      Args:
-        None
-      '''
-      self.serial_connection = serial.Serial('/dev/serial0', 9600)
+        ''' Initialization
+        Args:
+          None
+        '''
+        self.serial_connection = serial.Serial('/dev/serial0', 9600)
 
     def connects_to_internet(self, host="8.8.8.8", port=53, timeout=3):
-      """ Tests internet connectivity
-      Test intenet connectivity by checking with Google
-      Host: 8.8.8.8 (google-public-dns-a.google.com)
-      OpenPort: 53/tcp
-      Service: domain (DNS/TCP)
-      Args:
-        host (str): the host to test connection
-        port (int): the port to use
-        timeout (timeout): the timeout value (in seconds)
-      """
+        """ Tests internet connectivity
+        Test intenet connectivity by checking with Google
+        Host: 8.8.8.8 (google-public-dns-a.google.com)
+        OpenPort: 53/tcp
+        Service: domain (DNS/TCP)
+        Args:
+          host (str): the host to test connection
+          port (int): the port to use
+          timeout (timeout): the timeout value (in seconds)
+        """
 
-      try:
-        socket.setdefaulttimeout(timeout)
-        socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
-        return True
-      except Exception as err:
-        print(err.message)
-        return False
+        try:
+            socket.setdefaulttimeout(timeout)
+            socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
+            return True
+        except Exception as err:
+            print(err.message)
+            return False
 
     def get_serial_number(self):
-      """ Get uniqeu serial number
-      Get a unique serial number from the cpu
-      Args:
-        None
-      """
-      serial = "0000000000"
-      try:
-        with open('/proc/cpuinfo','r') as fp:
-          for line in fp:
-            if line[0:6]=='Serial':
-              serial = line[10:26]
-        if serial == "0000000000":
-          raise TypeError('Could not extract serial from /proc/cpuinfo')
-      except FileExistsError as err :
+        """ Get uniqeu serial number
+        Get a unique serial number from the cpu
+        Args:
+          None
+        """
         serial = "0000000000"
-        print(err.message)
+        try:
+            with open('/proc/cpuinfo', 'r') as fp:
+                for line in fp:
+                    if line[0:6] == 'Serial':
+                        serial = line[10:26]
+            if serial == "0000000000":
+                raise TypeError('Could not extract serial from /proc/cpuinfo')
+        except FileExistsError as err:
+            serial = "0000000000"
+            print(err.message)
 
-      except TypeError as err :
-        serial = "0000000000"
-        print(err.message)
-      return serial
+        except TypeError as err:
+            serial = "0000000000"
+            print(err.message)
+        return serial
 
     def get_mac_address(self):
-      """ Get the ethernet MAC address
-      This returns in the MAC address in the canonical human-reable form
-      Args:
-        None
-      """
-      hex = uuid.getnode()
-      formatted = ':'.join(['{:02x}'.format((hex >> ele) & 0xff) for ele in range(0,8*6,8)][::-1])
-      return formatted
+        """ Get the ethernet MAC address
+        This returns in the MAC address in the canonical human-reable form
+        Args:
+          None
+        """
+        hex = uuid.getnode()
+        formatted = ':'.join(['{:02x}'.format((hex >> ele) & 0xff)
+                              for ele in range(0, 8*6, 8)][::-1])
+        return formatted
+
 
 class Sensors():
     """ Class to handle sensor communication
@@ -99,6 +102,7 @@ class Sensors():
         lock (): Instance of threading Lock to
         monitor (): Process that continuously read incomming serial messages
     """
+
     def __init__(self):
         """ Initialization
         """
@@ -139,7 +143,7 @@ class Sensors():
             print("starting monitor")
         while True:
             try:
-                line = self.arduino_link.serial_connection.readline()
+                line = self.arduino_link.serial_connection.readline().rstrip()
                 if self.checksum_passed(line):
                     if (self.verbosity == 1):
                         print("checksum passed")
@@ -153,38 +157,43 @@ class Sensors():
                 print('Error: ', sys.exc_info()[0])
                 # return
 
-    def checksum_passed(self, string):
+    def pop_param(self, msg, char):
+        ''' pop
+        Args:
+            char (char): a special character occuring only once
+            msg (str): a string containing the the special character
+        Returns:
+            (sub_msg[0], sub_msg[1]) : two sub strings on either side of char.
+            When there is more than one occurence of char (or when it is not present),
+            returns the tuple (False, msg)
+        '''
+        
+        msg = msg.decode().split(char)
+        if len(msg) != 2:
+            if (self.verbosity == 1):
+                print("Corrupt message: while splitting with special character '{}' ".format(char))
+            return False, msg
+        return msg[0], msg[1]
+
+    def checksum_passed(self, msg):
         ''' Check if the checksum passed
         recompute message checksum and compares with appended hash
         Args:
-            string (str): a string containing the message, having the following
-                          format: Len*CRC32$Param|Value&Param|Value
+            msg (str): a string containing the message, having the following
+                          format: Len~CRC32$Param|Value&Param|Value
 
         '''
+        # pop the Len
+        msg_len, msg = self.pop_param(msg, '~')
+        if msg_len == False: return False
 
+        # pop the Len
+        msg_crc, msg = self.pop_param(msg, '$')
+        if msg_crc == False: return False
 
-        if string.decode().len()>92:
-            if (self.verbosity == 1):
-                print("Length Fail: received string is too long")
-            return False
-
-        lineSplit = string.decode().split('*')
-        if len(lineSplit) != 2:
-            if (self.verbosity == 1):
-                print("Corrupt message: while splitting with length special character '*' ")
-            return False
-
-        # extract the Len
-        msg_len=lineSplit[0]
-        lineSplit = lineSplit[1].decode().split('$')
-        if len(lineSplit) != 2:
-            if (self.verbosity == 1):
-                print("Corrupt message: while splitting with length special character '$' ")
-            return False
-        # extract the CRC
-        msg_crc=lineSplit[0]
-        calcCRC = binascii.crc32(lineSplit[0].encode())
-        if format(calcCRC, 'X') == lineSplit[1].rstrip():
+        # compare CRC32
+        calcCRC = binascii.crc32(msg.rstrip()) & 0xffffffff
+        if format(calcCRC, 'x') == msg_crc:
             if (self.verbosity == 1):
                 print("CRC32 matches")
             return True
@@ -192,11 +201,10 @@ class Sensors():
             if (self.verbosity == 1):
                 print(
                     "CRC32 Fail: calculated " +
-                    format(calcCRC,'X') +
+                    format(calcCRC, 'x') +
                     " but received " +
-                    lineSplit[1])
+                    msg_crc)
             return False
-
 
     def save_message_dict(self, msg):
         '''
@@ -208,15 +216,18 @@ class Sensors():
         NOTE: The time stamp from the arduino is replaced here
         '''
 
-        msg_serial = msg.decode().split('$')[1]
+        # pop the Len and CRC out
+        tmp, msg = self.pop_param(msg, '$')
+
+        if tmp == False: return False
         self.sensorframe = {}
-        for params in msg_serial.split('&'):
-            kvp=params.split("|")
+        for params in msg.split('&'):
+            kvp = params.split("|")
             if len(kvp) != 2:
                 print("ERROR: bad key-value pair")
             else:
-                self.sensorframe[kvp[0]] = kvp[1]
-        self.sensorframe['time'] = time.strftime(
+                self.sensorframe[kvp[0].encode("utf-8")] = kvp[1].encode("utf-8")
+        self.sensorframe['Time'] = time.strftime(
             "%Y-%m-%d %H:%M:%S", time.gmtime())
         return
 
@@ -229,17 +240,22 @@ if __name__ == '__main__':
         print("Hardware serial number: {}".format(iface.get_serial_number()))
         print("Hardware address (ethernet): {}".format(iface.get_mac_address()))
         print("Can connect to the internet: {}".format(iface.connects_to_internet()))
-        print("Can contact the mothership: {}".format(iface.connects_to_internet(host='35.183.143.177', port=80)))
+        print("Can contact the mothership: {}".format(
+            iface.connects_to_internet(host='35.183.143.177', port=80)))
         print("Has serial connection with Arduino: {}".format(iface.serial_connection.is_open))
         del iface
 
     monitor_serial = False
+    monitor_serial = True
     if monitor_serial:
         mon = Sensors()
         mon.verbosity = 1
-        print("Has serial connection with Arduino: {}".format(mon.arduino_link.serial_connection.is_open))
+        print("Has serial connection with Arduino: {}".format(
+            mon.arduino_link.serial_connection.is_open))
         print("Displaying serial data")
         while True:
             time.sleep(5)
-            print(mon)
+            # print("trying...")
+            print(mon.sensorframe)
+            # print(mon.arduino_link.serial_connection.readline())
         del mon
