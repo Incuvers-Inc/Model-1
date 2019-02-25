@@ -157,39 +157,43 @@ class Sensors():
                 print('Error: ', sys.exc_info()[0])
                 # return
 
+    def pop_param(msg, char):
+        ''' pop
+        Args:
+            char (char): a special character occuring only once
+            msg (str): a string containing the the special character
+        Returns:
+            (sub_msg[0], sub_msg[1]) : two sub strings on either side of char.
+            When there is more than one occurence of char (or when it is not present),
+            returns the tuple (False, msg)
+        '''
+        msg = msg.decode().split(char)
+        if len(msg) != 2:
+            if (self.verbosity == 1):
+                print("Corrupt message: while splitting with special character '{}' ".format(char))
+            return False, msg
+        return msg[0], msg[1]
+
     def checksum_passed(self, msg):
         ''' Check if the checksum passed
         recompute message checksum and compares with appended hash
         Args:
-            string (str): a string containing the message, having the following
+            msg (str): a string containing the message, having the following
                           format: Len~CRC32$Param|Value&Param|Value
 
         '''
 
-        # if len(string.decode())>92:
-        #    if (self.verbosity == 1):
-        #        print("Length Fail: received string is too long: found {}".format(len(string.decode())))
-        #    return False
+        # pop the Len
+        len, msg = pop_param(msg, '~')
+        if len == False return False
 
         # pop the Len
-        msg = msg.decode().split('~')
-        if len(msg) != 2:
-            if (self.verbosity == 1):
-                print("Corrupt message: while splitting with length special character '~' ")
-            return False
-        msg_len = msg[0]
-
-        # pop the CRC32
-        msg = msg[1].decode().split('$')
-        if len(msg) != 2:
-            if (self.verbosity == 1):
-                print("Corrupt message: while splitting with length special character '$' ")
-            return False
-        msg_crc = msg[0]
+        crc, msg = pop_param(msg, '$')
+        if crc == False return False
 
         # compare CRC32
-        calcCRC = binascii.crc32(msg[1].rstrip()) & 0xffffffff
-        if format(calcCRC, 'x') == msg_crc:
+        calcCRC = binascii.crc32(msg.rstrip()) & 0xffffffff
+        if format(calcCRC, 'x') == crc:
             if (self.verbosity == 1):
                 print("CRC32 matches")
             return True
@@ -199,7 +203,7 @@ class Sensors():
                     "CRC32 Fail: calculated " +
                     format(calcCRC, 'x') +
                     " but received " +
-                    msg_crc)
+                    crc)
             return False
 
     def save_message_dict(self, msg):
@@ -212,9 +216,12 @@ class Sensors():
         NOTE: The time stamp from the arduino is replaced here
         '''
 
-        msg_sensors = msg.split('$')[1]
+        # pop the Len and CRC out
+        tmp, msg = pop_param(msg, '$')
+
+        if tmp == False return False
         self.sensorframe = {}
-        for params in msg_sensors.split('&'):
+        for params in msg.split('&'):
             kvp = params.split("|")
             if len(kvp) != 2:
                 print("ERROR: bad key-value pair")
