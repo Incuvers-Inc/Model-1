@@ -438,8 +438,6 @@ class IncuversSettingsHandler {
         piLink = String(String(piLink.length(), DEC) + F("~") + String(crc.finalize(), HEX) + F("$") + piLink);   // CRC to detect corrupted entries
       }
  
-      Serial.println(piLink);
-
       return piLink;
     }
     
