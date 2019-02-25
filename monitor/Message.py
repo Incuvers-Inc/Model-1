@@ -162,7 +162,7 @@ class Sensors():
         recompute message checksum and compares with appended hash
         Args:
             string (str): a string containing the message, having the following
-                          format: Len*CRC32$Param|Value&Param|Value
+                          format: Len~CRC32$Param|Value&Param|Value
 
         '''
 
