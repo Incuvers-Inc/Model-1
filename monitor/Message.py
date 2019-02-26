@@ -10,19 +10,21 @@ import threading
 import time
 import fcntl
 
-
 """
 .. module:: Message
     :platform: Raspbian
     :synopsis: Incubator module for serial communication between RPi and Arduino
 
 """
+
+
 class ArduinoDirectiveHandler():
     """ Class that handles sending commands to the arduino and verifying
     that the csommands have been accepted and acted uopn by the control
     board.
     """
-    def __intit__(self):
+
+    def __init__(self):
         ''' Initialization
         Args:
           None
@@ -31,7 +33,7 @@ class ArduinoDirectiveHandler():
 
     def enqueue_parameter_update(self, param, value):
         """ Adds a parameter to the update queue, the updates will be sent
-        at a later time.  If this update follows another requested update, 
+        at a later time.  If this update follows another requested update,
         overwrite it.  The item will remain in the queue until the action
         has been verified
         Args:
@@ -45,7 +47,7 @@ class ArduinoDirectiveHandler():
 
     def get_arduino_command_string(self):
         """ Returns a complete string to send to the arduino in order to
-        update the running parameters.  Commands can be no longer than 80 
+        update the running parameters.  Commands can be no longer than 80
         characters and won't involve removing the command from the queue,
         a separate system will verify that the change has been made.
         Args:
@@ -56,10 +58,12 @@ class ArduinoDirectiveHandler():
             if (len(arduino_command_string) + len(param) + len(str(queuedictionary[param])) + 2) <= 80:
                 if len(arduino_command_string) > 0:
                     arduino_command_string = arduino_command_string + "&"
-                arduino_command_string = arduino_command_string + param + "|" + str(queuedictionary[param])
+                arduino_command_string = arduino_command_string + \
+                    param + "|" + str(queuedictionary[param])
         commandLen = len(arduino_command_string)
         calcCRC = binascii.crc32(arduino_command_string.encode())
-        arduino_command_string = str(commandLen) + "~" + format(calcCRC, 'X') + "$" + arduino_command_string
+        arduino_command_string = str(commandLen) + "~" + format(calcCRC,
+                                                                'X') + "$" + arduino_command_string
 
         return arduino_command_string
 
@@ -111,7 +115,7 @@ class ArduinoDirectiveHandler():
         cmd_string = self.get_arduino_command_string()
         self.clear_queue()
         return cmd_string
-    
+
 
 class Interface():
     """ Class that holds everything important concerning communication.
@@ -142,24 +146,6 @@ class Interface():
           port (int): the port to use
           timeout (timeout): the timeout value (in seconds)
         """
-
-    def get_serial_number(self):
-      """ Get unique serial number
-      Get a unique serial number from the cpu
-      Args:
-        None
-      """
-      serial = "0000000000"
-      try:
-        with open('/proc/cpuinfo','r') as fp:
-          for line in fp:
-            if line[0:6]=='Serial':
-              serial = line[10:26]
-        if serial == "0000000000":
-          raise TypeError('Could not extract serial from /proc/cpuinfo')
-      except FileExistsError as err :
-        serial = "0000000000"
-        print(err.message)
         try:
             socket.setdefaulttimeout(timeout)
             socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
@@ -278,7 +264,7 @@ class Sensors():
             When there is more than one occurence of char (or when it is not present),
             returns the tuple (False, msg)
         '''
-        
+
         msg = msg.decode().split(char)
         if len(msg) != 2:
             if (self.verbosity == 1):
@@ -296,33 +282,13 @@ class Sensors():
         '''
         # pop the Len
         msg_len, msg = self.pop_param(msg, '~')
-        if msg_len == False: return False
-
-        # pop the Len
+        if msg_len == False:
+            return False
+        # pop the Crc
         msg_crc, msg = self.pop_param(msg, '$')
-        if msg_crc == False: return False
-
-        if string.decode().len()>92:
-            if (self.verbosity == 1):
-                print("Length Fail: received string is too long")
+        if msg_crc == False:
             return False
 
-        lineSplit = string.decode().split('~')
-        if len(lineSplit) != 2:
-            if (self.verbosity == 1):
-                print("Corrupt message: while splitting with length special character '*' ")
-            return False
-
-        # extract the Len
-        msg_len=lineSplit[0]
-        lineSplit = lineSplit[1].decode().split('$')
-        if len(lineSplit) != 2:
-            if (self.verbosity == 1):
-                print("Corrupt message: while splitting with length special character '$' ")
-            return False
-        # extract the CRC
-        msg_crc=lineSplit[0]
-        calcCRC = binascii.crc32(lineSplit[1].encode().rstrip())
         # compare CRC32
         calcCRC = binascii.crc32(msg.rstrip()) & 0xffffffff
         if format(calcCRC, 'x') == msg_crc:
@@ -351,7 +317,8 @@ class Sensors():
         # pop the Len and CRC out
         tmp, msg = self.pop_param(msg, '$')
 
-        if tmp == False: return False
+        if tmp == False:
+            return False
         self.sensorframe = {}
         for params in msg.split('&'):
             kvp = params.split("|")
@@ -367,6 +334,7 @@ class Sensors():
 if __name__ == '__main__':
 
     test_connections = False
+    test_connections = True
     if test_connections:
         iface = Interface()
         print("Hardware serial number: {}".format(iface.get_serial_number()))
@@ -381,14 +349,13 @@ if __name__ == '__main__':
     if test_commandset:
         arduino_handler = ArduinoDirectiveHandler()
 
-
         del arduino_handler
 
     monitor_serial = False
     monitor_serial = True
     if monitor_serial:
         mon = Sensors()
-        mon.verbosity = 1
+        mon.verbosity = 0
         print("Has serial connection with Arduino: {}".format(
             mon.arduino_link.serial_connection.is_open))
         print("Displaying serial data")
