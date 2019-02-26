@@ -10,7 +10,6 @@ import threading
 import time
 import fcntl
 
-
 """
 .. module:: Message
     :platform: Raspbian
@@ -25,7 +24,7 @@ class ArduinoDirectiveHandler():
     board.
     """
 
-    def __intit__(self):
+    def __init__(self):
         ''' Initialization
         Args:
           None
@@ -147,31 +146,13 @@ class Interface():
           port (int): the port to use
           timeout (timeout): the timeout value (in seconds)
         """
-
-    def get_serial_number(self):
-        """ Get unique serial number
-        Get a unique serial number from the cpu
-        Args:
-          None
-        """
-        serial = "0000000000"
         try:
-            with open('/proc/cpuinfo', 'r') as fp:
-                for line in fp:
-                    if line[0:6] == 'Serial':
-                        serial = line[10:26]
-            if serial == "0000000000":
-                raise TypeError('Could not extract serial from /proc/cpuinfo')
-        except FileExistsError as err:
-            serial = "0000000000"
+            socket.setdefaulttimeout(timeout)
+            socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
+            return True
+        except Exception as err:
             print(err.message)
-            try:
-                socket.setdefaulttimeout(timeout)
-                socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
-                return True
-            except Exception as err:
-                print(err.message)
-                return False
+            return False
 
     def get_serial_number(self):
         """ Get uniqeu serial number
