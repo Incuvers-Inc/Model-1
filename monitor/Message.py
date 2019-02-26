@@ -17,7 +17,101 @@ import fcntl
     :synopsis: Incubator module for serial communication between RPi and Arduino
 
 """
+class ArduinoDirectiveHandler():
+    """ Class that handles sending commands to the arduino and verifying
+    that the csommands have been accepted and acted uopn by the control
+    board.
+    """
+    def __intit__(self):
+        ''' Initialization
+        Args:
+          None
+        '''
+        self.queuedictionary = {}
 
+    def enqueue_parameter_update(self, param, value):
+        """ Adds a parameter to the update queue, the updates will be sent
+        at a later time.  If this update follows another requested update, 
+        overwrite it.  The item will remain in the queue until the action
+        has been verified
+        Args:
+          param (str): the identifier of the parameter to update
+          value (int): the value of the parameter to update
+        """
+        if param in queuedictionary:
+            print("The " + param +
+                  " parameter was already in the dictionary, updating.")
+        queuedictionary[param] = value
+
+    def get_arduino_command_string(self):
+        """ Returns a complete string to send to the arduino in order to
+        update the running parameters.  Commands can be no longer than 80 
+        characters and won't involve removing the command from the queue,
+        a separate system will verify that the change has been made.
+        Args:
+          None
+        """
+        arduino_command_string = ""
+        for param in queuedictionary:
+            if (len(arduino_command_string) + len(param) + len(str(queuedictionary[param])) + 2) <= 80:
+                if len(arduino_command_string) > 0:
+                    arduino_command_string = arduino_command_string + "&"
+                arduino_command_string = arduino_command_string + param + "|" + str(queuedictionary[param])
+        commandLen = len(arduino_command_string)
+        calcCRC = binascii.crc32(arduino_command_string.encode())
+        arduino_command_string = str(commandLen) + "~" + format(calcCRC, 'X') + "$" + arduino_command_string
+
+        return arduino_command_string
+
+    def verify_arduino_response(self, last_sensor_frame):
+        """ Will check all commands in the queuedictionary and pop off any
+        for which the state coming from the arduino matches the desired level
+        Args:
+          last_sensor_frame (dict): the last sensorframe received from the Arduino
+        """
+
+    def clear_queue(self):
+        """ Command to erase everything in the queue.
+        Args:
+          None
+        """
+        for param in queuedictionary:
+            queuedictionary.pop(param)
+
+    def get_arduino_mac_update_command_string(self, param="ME", mac_addr="00:00:00:00:00:00"):
+        """ Should only be called shortly after a boot
+        Args:
+          param (str): two-letter code for the start of the parameter (ME for Ethernet, ML for Wifi)
+          mac_addr (str): colon-separated string of the current system's MAC address
+        """
+        self.clear_queue()
+        mac_bits = mac_addr.split(":")
+        self.enqueue_parameter_update(param + "A", mac_bits[0])
+        self.enqueue_parameter_update(param + "B", mac_bits[1])
+        self.enqueue_parameter_update(param + "C", mac_bits[2])
+        self.enqueue_parameter_update(param + "D", mac_bits[3])
+        self.enqueue_parameter_update(param + "E", mac_bits[4])
+        self.enqueue_parameter_update(param + "F", mac_bits[5])
+        cmd_string = self.get_arduino_command_string()
+        self.clear_queue()
+        return cmd_string
+
+    def get_arduino_ip_update_command_string(self, ip_addr):
+        """ Should only be called after a boot or when noticing an IP
+        change
+        Args:
+          ip_addr (str): string containing the IP address of the item
+        """
+        self.clear_queue()
+        ip_bits = ip_addr.split(".")
+        self.enqueue_parameter_update("IPA", ip_bits[0])
+        self.enqueue_parameter_update("IPB", ip_bits[1])
+        self.enqueue_parameter_update("IPC", ip_bits[2])
+        self.enqueue_parameter_update("IPD", ip_bits[3])
+        cmd_string = self.get_arduino_command_string()
+        self.clear_queue()
+        return cmd_string
+    
 
 class Interface():
     """ Class that holds everything important concerning communication.
@@ -57,7 +151,7 @@ class Interface():
         return False
 
     def get_serial_number(self):
-      """ Get uniqeu serial number
+      """ Get unique serial number
       Get a unique serial number from the cpu
       Args:
         None
@@ -168,7 +262,7 @@ class Sensors():
                 print("Length Fail: received string is too long")
             return False
 
-        lineSplit = string.decode().split('*')
+        lineSplit = string.decode().split('~')
         if len(lineSplit) != 2:
             if (self.verbosity == 1):
                 print("Corrupt message: while splitting with length special character '*' ")
@@ -183,8 +277,8 @@ class Sensors():
             return False
         # extract the CRC
         msg_crc=lineSplit[0]
-        calcCRC = binascii.crc32(lineSplit[0].encode())
-        if format(calcCRC, 'X') == lineSplit[1].rstrip():
+        calcCRC = binascii.crc32(lineSplit[1].encode().rstrip())
+        if format(calcCRC, 'X') == lineSplit[0]:
             if (self.verbosity == 1):
                 print("CRC32 matches")
             return True
@@ -194,7 +288,7 @@ class Sensors():
                     "CRC32 Fail: calculated " +
                     format(calcCRC,'X') +
                     " but received " +
-                    lineSplit[1])
+                    lineSplit[0])
             return False
 
 
@@ -232,6 +326,13 @@ if __name__ == '__main__':
         print("Can contact the mothership: {}".format(iface.connects_to_internet(host='35.183.143.177', port=80)))
         print("Has serial connection with Arduino: {}".format(iface.serial_connection.is_open))
         del iface
+
+    test_commandset = True
+    if test_commandset:
+        arduino_handler = ArduinoDirectiveHandler()
+
+
+        del arduino_handler
 
     monitor_serial = False
     if monitor_serial:
