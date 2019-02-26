@@ -284,33 +284,11 @@ class Sensors():
         msg_len, msg = self.pop_param(msg, '~')
         if msg_len == False:
             return False
-
-        # pop the Len
+        # pop the Crc
         msg_crc, msg = self.pop_param(msg, '$')
         if msg_crc == False:
             return False
 
-        if string.decode().len() > 92:
-            if (self.verbosity == 1):
-                print("Length Fail: received string is too long")
-            return False
-
-        lineSplit = string.decode().split('~')
-        if len(lineSplit) != 2:
-            if (self.verbosity == 1):
-                print("Corrupt message: while splitting with length special character '*' ")
-            return False
-
-        # extract the Len
-        msg_len = lineSplit[0]
-        lineSplit = lineSplit[1].decode().split('$')
-        if len(lineSplit) != 2:
-            if (self.verbosity == 1):
-                print("Corrupt message: while splitting with length special character '$' ")
-            return False
-        # extract the CRC
-        msg_crc = lineSplit[0]
-        calcCRC = binascii.crc32(lineSplit[1].encode().rstrip())
         # compare CRC32
         calcCRC = binascii.crc32(msg.rstrip()) & 0xffffffff
         if format(calcCRC, 'x') == msg_crc:
@@ -356,6 +334,7 @@ class Sensors():
 if __name__ == '__main__':
 
     test_connections = False
+    test_connections = True
     if test_connections:
         iface = Interface()
         print("Hardware serial number: {}".format(iface.get_serial_number()))
@@ -376,7 +355,7 @@ if __name__ == '__main__':
     monitor_serial = True
     if monitor_serial:
         mon = Sensors()
-        mon.verbosity = 1
+        mon.verbosity = 0
         print("Has serial connection with Arduino: {}".format(
             mon.arduino_link.serial_connection.is_open))
         print("Displaying serial data")
