@@ -14,7 +14,7 @@ class IncuversPiLink {
     IncuversSettingsHandler* incSet;
     bool isEnabled;
 
-    // Each command will be given on a single line.  In the format of Len*CRC32$Param|Value&Param|Value
+    // Each command will be given on a single line.  In the format of Len~CRC32$Param|Value&Param|Value
     // A command line may not be longer than 92 characters.
     void CheckForCommands() {
       if (PILINK_SERIALHANDLE.available()) {
@@ -44,7 +44,7 @@ class IncuversPiLink {
           Serial.println(stringRead);
         #endif
 
-        char* msgLenText = strtok(stringRead, "*");
+        char* msgLenText = strtok(stringRead, "~");
         int msgLen =  atoi(msgLenText);
         
         if (msgLen > 0 && msgLen <= MAX_PAYLOAD_SIZE && strLen == (msgLen + strlen(msgLenText) + 10)) {

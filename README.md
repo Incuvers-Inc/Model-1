@@ -84,7 +84,7 @@ Wherever possible the Parameter names will match in the Pi &rarr; Arduino and Ar
 A command line coming from the Pi will not include a payload of more than 80 characters making a command no longer than 92 characters long.
 
 ### Special characters
-There are special characters used parse the message and cannot be used as part of the message: the ampersand `&`; pipe `|`; asterisk `*` and dollar sign `$`.
+There are special characters used parse the message and cannot be used as part of the message: the ampersand `&`; pipe `|`; tilde `~` and dollar sign `$`.
 
 
 
@@ -96,7 +96,7 @@ where `Len` is the length of the message payload,
 and each `Param|Value` pair include a unique parameter Id and a positive Integer value (decimal numbers will be converted on the Arduino.)
 
 Messages will always contain the `Len` block, the `CRC32` block and one or more `Param|Value` tuples.
-The `Len` block is always the first to lead and is terminated by the special character `*`.
+The `Len` block is always the first to lead and is terminated by the special character `~`.
 What follows is the checksum `CRC32` which is used to verify the message integrity.
 The `CRC32` is terminated by the special character `$`.
 
@@ -106,11 +106,11 @@ In the case of a corrupted message, that does not contain the special parsing ch
 
 Examples:  
 
-`30*xxxxxxxx$IPA|192&IPB|168&IPC|42&IPD|142`  
+`30~xxxxxxxx$IPA|192&IPB|168&IPC|42&IPD|142`  
 In this first example, the Pi is providing its configured network address to the Arduino for display in the UI.
 
 In another example:
-`20*xxxxxxxx$TP|3750&CP|1950&LS|1`
+`20~xxxxxxxx$TP|3750&CP|1950&LS|1`
 
 the Pi is directing the Arduino to change the temperature set point (with key `TP`) to 37.5, the CO2 set point (with key `CP`) to 19.50 and to turn on the lighting system (with key `LS`).
 
