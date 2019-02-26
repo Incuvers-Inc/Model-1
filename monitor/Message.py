@@ -26,6 +26,7 @@ class ArduinoDirectiveHandler():
 
     def __init__(self):
         ''' Initialization
+
         Args:
           None
         '''
@@ -36,20 +37,23 @@ class ArduinoDirectiveHandler():
         at a later time.  If this update follows another requested update,
         overwrite it.  The item will remain in the queue until the action
         has been verified
+
         Args:
-          param (str): the identifier of the parameter to update
-          value (int): the value of the parameter to update
+            param (str): the identifier of the parameter to update
+            value (int): the value of the parameter to update
         """
-        if param in queuedictionary:
+
+        if param in self.queuedictionary:
             print("The " + param +
                   " parameter was already in the dictionary, updating.")
-        queuedictionary[param] = value
+        self.selfqueuedictionary[param] = value
 
     def get_arduino_command_string(self):
         """ Returns a complete string to send to the arduino in order to
         update the running parameters.  Commands can be no longer than 80
         characters and won't involve removing the command from the queue,
         a separate system will verify that the change has been made.
+
         Args:
           None
         """
@@ -70,20 +74,27 @@ class ArduinoDirectiveHandler():
     def verify_arduino_response(self, last_sensor_frame):
         """ Will check all commands in the queuedictionary and pop off any
         for which the state coming from the arduino matches the desired level
+
         Args:
           last_sensor_frame (dict): the last sensorframe received from the Arduino
         """
 
+        return()
+
     def clear_queue(self):
-        """ Command to erase everything in the queue.
-        Args:
-          None
         """
-        for param in queuedictionary:
-            queuedictionary.pop(param)
+        Command to erase everything in the queue.
+
+        Args:
+            None
+        """
+
+        for param in self.queuedictionary:
+            self.queuedictionary.pop(param)
 
     def get_arduino_mac_update_command_string(self, param="ME", mac_addr="00:00:00:00:00:00"):
         """ Should only be called shortly after a boot
+
         Args:
           param (str): two-letter code for the start of the parameter (ME for Ethernet, ML for Wifi)
           mac_addr (str): colon-separated string of the current system's MAC address
@@ -103,6 +114,7 @@ class ArduinoDirectiveHandler():
     def get_arduino_ip_update_command_string(self, ip_addr):
         """ Should only be called after a boot or when noticing an IP
         change
+
         Args:
           ip_addr (str): string containing the IP address of the item
         """
@@ -131,6 +143,7 @@ class Interface():
     def __init__(self):
         ''' Initialization
         Args:
+
           None
         '''
         self.serial_connection = serial.Serial('/dev/serial0', 9600)
@@ -141,6 +154,7 @@ class Interface():
         Host: 8.8.8.8 (google-public-dns-a.google.com)
         OpenPort: 53/tcp
         Service: domain (DNS/TCP)
+
         Args:
           host (str): the host to test connection
           port (int): the port to use
@@ -157,6 +171,7 @@ class Interface():
     def get_serial_number(self):
         """ Get uniqeu serial number
         Get a unique serial number from the cpu
+
         Args:
           None
         """
@@ -180,6 +195,7 @@ class Interface():
     def get_mac_address(self):
         """ Get the ethernet MAC address
         This returns in the MAC address in the canonical human-reable form
+
         Args:
           None
         """
@@ -191,7 +207,7 @@ class Interface():
 
 class Sensors():
     """ Class to handle sensor communication
-    This
+
     Attributes:
         sensorframe (dict : Dictionary holding all sensor key-value pairs
         verbosity (int) : set sthe amount of information printed to screen
@@ -224,6 +240,7 @@ class Sensors():
     def json_sensorframe(self):
         """ JSON object containing arduino serial message
         Returns a JSON formated string of the current state
+
         Args:
             None
         """
@@ -235,6 +252,9 @@ class Sensors():
         ''' Processes serial messages from Arduino
         This runs continuously to maintain an updated
         status of the sensors from the arduino
+
+        Args:
+            None
         '''
         if (self.verbosity == 1):
             print("starting monitor")
@@ -256,9 +276,11 @@ class Sensors():
 
     def pop_param(self, msg, char):
         ''' pop
+
         Args:
             char (char): a special character occuring only once
             msg (str): a string containing the the special character
+
         Returns:
             (sub_msg[0], sub_msg[1]) : two sub strings on either side of char.
             When there is more than one occurence of char (or when it is not present),
@@ -275,10 +297,13 @@ class Sensors():
     def checksum_passed(self, msg):
         ''' Check if the checksum passed
         recompute message checksum and compares with appended hash
+
         Args:
             msg (str): a string containing the message, having the following
                           format: Len~CRC32$Param|Value&Param|Value
 
+        Returns:
+            `True` when `msg` passes the checksum, `False` otherwise
         '''
         # pop the Len
         msg_len, msg = self.pop_param(msg, '~')
@@ -330,10 +355,11 @@ class Sensors():
         '''
         Takes the serial output from the incubator and creates a dictionary
         using the two letter ident as a key and the value as a value.
+
         Args:
             msg (string): The raw serial message (including the trailing checksum)
+
         Only use a message that passed the checksum!
-        NOTE: The time stamp from the arduino is replaced here
         '''
 
         # pop the Len and CRC out
