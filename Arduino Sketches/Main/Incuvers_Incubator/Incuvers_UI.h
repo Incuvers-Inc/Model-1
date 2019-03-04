@@ -523,17 +523,47 @@ class IncuversUI {
           }
           if (firstline == 1 || firstline == 2) {
             lcd->setCursor(0, lineId);
-            lcd->print(F("SN: "));
+            lcd->print(F("PI: "));
             lcd->print(incSet->getSerial());
             lineId++;
           }
           if (firstline == 2 || firstline == 3) {
             lcd->setCursor(0, lineId);
-            lcd->print(F("Hardware opts: "));
-            //lcd->print();
+            lcd->print(F("rPI IP: "));
             lineId++;
           }
           if (firstline == 3 || firstline == 4) {
+            lcd->setCursor(1, lineId);
+            lcd->print(incSet->getIP4());
+            lineId++;
+          }
+          if (firstline == 4 || firstline == 5) {
+            lcd->setCursor(0, lineId);
+            lcd->print(F("Wired MAC: "));
+            lineId++;
+          }
+          if (firstline == 5 || firstline == 6) {
+            lcd->setCursor(1, lineId);
+            lcd->print(incSet->getWireMAC());
+            lineId++;
+          }
+          if (firstline == 6 || firstline == 7) {
+            lcd->setCursor(0, lineId);
+            lcd->print(F("Wifi MAC: "));
+            lineId++;
+          }
+          if (firstline == 7 || firstline == 8) {
+            lcd->setCursor(1, lineId);
+            lcd->print(incSet->getWifiMAC());
+            lineId++;
+          }
+          
+          if (firstline == 8 || firstline == 9) {
+            lcd->setCursor(0, lineId);
+            lcd->print(F("Hardware opts: "));
+            lineId++;
+          }
+          if (firstline == 9 || firstline == 10) {
             String hwSup = F("H ");
             if (incSet->HasCO2Sensor()) {
               hwSup = String(hwSup + F("CO2 "));
@@ -555,13 +585,13 @@ class IncuversUI {
             //lcd->print();
             lineId++;
           }
-          if (firstline == 4 || firstline == 5) {
+          if (firstline == 10 || firstline == 11) {
             lcd->setCursor(0, lineId);
             lcd->print(F("Software incld: "));
             //lcd->print();
             lineId++;
           }
-          if (firstline == 5 || firstline == 6) {
+          if (firstline == 11 || firstline == 12) {
             String swSup = F("H ");
             #ifdef INCLUDE_CO2
             swSup = String(swSup + F("CO2 "));
@@ -591,7 +621,7 @@ class IncuversUI {
               redraw = true;
               break;
             case 2:
-              if (firstline < 5) { firstline++; }
+              if (firstline < 11) { firstline++; }
               redraw = true;
               break;
             case 3:
@@ -603,7 +633,7 @@ class IncuversUI {
           delay(MENU_UI_POST_DELAY);
           if (displayRedraw + 10000 < millis()) {
             firstline++;
-            if (firstline > 5) {
+            if (firstline > 12) {
               firstline = 1;
             }
           }
