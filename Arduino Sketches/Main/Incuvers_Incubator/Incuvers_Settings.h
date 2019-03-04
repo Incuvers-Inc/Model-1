@@ -42,6 +42,7 @@ struct HardwareStruct {
   bool lightingSupport;
   byte lightPin;
 };
+
 struct SettingsStruct {
   byte ident;
   // Fan settings
@@ -61,13 +62,26 @@ struct SettingsStruct {
   long millisOff;
   // Alarm settings
   byte alarmMode;     // 0 = off, 1 = report, 2 = alarm
-  
+};
+
+struct VolatileValuesStruct {
+  bool wifiMACSet;
+  byte wifiMAC[18];
+  bool wiredMACSet;
+  byte wiredMAC[18];
+  bool ipV4Set;
+  byte activeV4IP[16];
+  bool ipV6Set;
+  byte activeV6IP[42];
+  byte piSerial[18];
+  byte valuesVersion;  
 };
 
 class IncuversSettingsHandler {
   private:
     HardwareStruct settingsHardware;
     SettingsStruct settingsHolder;
+    VolatileValuesStruct settingsRuntime;
   
     IncuversHeatingSystem* incHeat;
     IncuversLightingSystem* incLight;
@@ -75,6 +89,19 @@ class IncuversSettingsHandler {
     IncuversO2System* incO2;
     
     int personalityCount;
+
+    void InitializeRuntimeSettings() {
+      strcpy_P(this->settingsRuntime.wifiMAC, (const char *) F("000000000000"));  
+      this->settingsRuntime.wifiMACSet = false;
+      strcpy_P(this->settingsRuntime.wiredMAC, (const char *) F("000000000000"));  
+      this->settingsRuntime.wiredMACSet = false;
+      strcpy_P(this->settingsRuntime.activeV4IP, (const char *) F("0.0.0.0"));
+      this->settingsRuntime.ipV4Set = false;
+      strcpy_P(this->settingsRuntime.activeV6IP, (const char *) F("0::0"));
+      this->settingsRuntime.ipV6Set = false;
+      strcpy_P(this->settingsRuntime.piSerial, (const char *) F("0"));
+      this->settingsRuntime.valuesVersion = 0;  
+    }
     
     int VerifyEEPROMHeader(int startAddress, boolean isHardware) {
       #ifdef DEBUG_EEPROM
@@ -228,7 +255,6 @@ class IncuversSettingsHandler {
         Serial.println(settingsHolder.millisOn);
         Serial.println(settingsHolder.millisOff);
         Serial.println(settingsHolder.alarmMode);
-        
       #endif
       return 1;
     }
@@ -258,6 +284,8 @@ class IncuversSettingsHandler {
       this->settingsHolder.millisOff = 30000;  // 10 hrs = 36000000 milliseconds
       // Alarm
       this->settingsHolder.alarmMode = 2;
+
+      this->InitializeRuntimeSettings();
       #ifdef DEBUG_EEPROM
         Serial.println(F("/Defaults"));
       #endif
@@ -399,8 +427,9 @@ class IncuversSettingsHandler {
     {
       // General Identification
       String piLink = String("TS|" + String(millis(), DEC));
-      piLink = String(piLink + F("&ID|") + String(this->settingsHardware.serial));              // Identification
-      piLink = String(piLink + F("&IV|") + F(SOFTWARE_VER_STRING));                             // Ident Version
+      piLink = String(piLink + F("&ID|") + String((char *) this->settingsRuntime.piSerial));             // Ident rPi Serial
+      piLink = String(piLink + F("&IV|") + F(SOFTWARE_VER_STRING));                             // Ident Software Version
+      piLink = String(piLink + F("&IR|") + String(this->settingsRuntime.valuesVersion));        // Ident Runtime Settings Version
       // Heating/Fan system
       piLink = String(piLink + F("&FM|") + this->settingsHolder.fanMode);                       // Fan, mode
       piLink = String(piLink + F("&TM|") + String(this->settingsHolder.heatMode, DEC));         // Temperature, mode
@@ -435,7 +464,7 @@ class IncuversSettingsHandler {
           crc.update(piLink[i]);
         }
   
-        piLink = String(String(piLink.length(), DEC) + F("~") + String(crc.finalize(), HEX) + F("$") + piLink);   // CRC to detect corrupted entries
+        piLink = String(String(piLink.length(), DEC) + F("~") + PadHexToLen(String(crc.finalize(), HEX), 8) + F("$") + piLink);   // CRC to detect corrupted entries
       }
  
       return piLink;
@@ -513,9 +542,68 @@ class IncuversSettingsHandler {
     }
     
     String getSerial() {
-      return String(this->settingsHardware.serial);
+      String serial = String( (char *) this->settingsRuntime.piSerial);
+      serial.trim();
+      return serial;
     }
 
+    void setSerial(byte serial[]) {
+      strcpy(this->settingsRuntime.piSerial, (char *) serial);
+      this->settingsRuntime.valuesVersion++;
+    }
+
+    String getRuntimeValuesVersion() {
+      return String(this->settingsRuntime.valuesVersion);
+    }
+
+    String getIP4() {
+      if (this->settingsRuntime.ipV4Set) {
+        String ip4 = String( (char *) this->settingsRuntime.activeV4IP);
+        ip4.trim();
+        return ip4;
+      } else {
+        return F("Not set");
+      }
+    }
+
+    void setIP4(byte ip[]) {
+      strcpy(this->settingsRuntime.activeV4IP, (char *) ip);
+      this->settingsRuntime.ipV4Set = true;
+      this->settingsRuntime.valuesVersion++;
+    }
+    
+    String getWireMAC() {
+      if (this->settingsRuntime.wiredMACSet) {
+        String wireMAC = String( (char *) this->settingsRuntime.wiredMAC);
+        wireMAC.trim();
+        return wireMAC;
+      } else {
+        return F("Not set");
+      }
+    }
+
+    void setWireMAC(byte mac[]) {
+      strcpy(this->settingsRuntime.wiredMAC, (char *) mac);
+      this->settingsRuntime.wiredMACSet = true;
+      this->settingsRuntime.valuesVersion++;
+    }
+    
+    String getWifiMAC() {
+      if (this->settingsRuntime.wifiMACSet) {
+        String wifiMAC = String( (char *) this->settingsRuntime.wifiMAC);
+        wifiMAC.trim();
+        return wifiMAC;
+      } else {
+        return F("Not set");
+      }
+    }
+
+    void setWifiMAC(byte mac[]) {
+      strcpy(this->settingsRuntime.wifiMAC, (char *) mac);
+      this->settingsRuntime.wifiMACSet = true;
+      this->settingsRuntime.valuesVersion++;
+    }
+       
     void MakeSafeState() {
       incHeat->MakeSafeState();
       incLight->MakeSafeState();

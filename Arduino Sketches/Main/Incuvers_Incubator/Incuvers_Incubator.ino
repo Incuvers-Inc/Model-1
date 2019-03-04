@@ -11,7 +11,7 @@
  *        Tim Spekkens
  */
 
-#define SOFTWARE_VER_STRING "v1.12 (01)"
+#define SOFTWARE_VER_STRING "v1.12 (02)"
 
  /* Changelog
   * 

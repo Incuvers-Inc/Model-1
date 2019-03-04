@@ -6,6 +6,20 @@ String PadToWidth(int source, int intSize) {
   }
 }
 
+String PadHexToLen(String src, int len) {
+  int srcLen = src.length();
+  String dst = "";
+  if (srcLen != len) {
+    for (int i = srcLen; i < len; i++) {
+      dst = String(dst + "0");
+    }
+    dst = String(dst + src);
+    return dst;
+  } else {
+    return src;
+  }
+}
+
 int freeMemory() {
   extern int __heap_start, *__brkval; 
   int v; 
