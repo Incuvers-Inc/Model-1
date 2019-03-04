@@ -1,7 +1,7 @@
 import common
 import monitor
 import unittest
-
+import time
 
 class TestInterface(unittest.TestCase):
     iface = monitor.Interface()
@@ -24,6 +24,36 @@ class TestInterface(unittest.TestCase):
     def serial_connection(self):
         # print("Has serial connection with Arduino: {}".format(iface.serial_connection.is_open()))
         self.unittest.assertTrue(self.iface.serial_connection.is_open())
+
+
+
+class TestArduino(unittest.TestCase):
+        #arduino_handler = monitor.ArduinoDirectiveHandler()
+        mon = monitor.Sensors()
+        mon.verbosity=1
+        tags=['TP','TC','TD','TA','TS','TM','FM','CP','CC','CS','CA','CM','OP','OC','OS','OM','OA']
+        tags.append('time')
+        tags.append('ID')
+        tags.append('IV')
+        timeout = 0
+        while len(mon.sensorframe)==0 and timeout<30:
+            # leave some time to get a valid sensorframe
+            time.sleep(1)
+            timeout+=1
+            print(timeout, mon.sensorframe)
+
+ 
+        def test_message_rcv(self):
+            self.assertFalse(len(mon.sensorframe)==0)
+
+        def test_message_len(self):
+            print(len(self.tags))
+            print(self.mon.sensorframe)
+            self.assertTrue(len(self.mon.sensorframe)==len(self.tags))
+
+        def test_tags(self):
+            for tag in self.tags:
+                self.assertTrue(tag in self.mon.sensorframe)
 
 
 if __name__ == '__main__':
