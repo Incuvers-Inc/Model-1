@@ -1,4 +1,4 @@
-
+﻿
 # Incuvers Environment Control
 This code is intended for the Incuvers telemetric chamber [http://www.incuvers.com](http://www.incuvers.com).
 The Arduino code manages the incubator environment and physical user interface via buttons on the unit.
@@ -120,10 +120,10 @@ Administrative:
 
  | Param      |Description          | Unit 	    | Example |
  | ----       | ----                | ----	    | ----	  |
- |`ID`        |Serial Identifier    | ?         | ...     |
- |`IPA`-`IPD` |Pi active IP address |(by hextet)| ...     |
- |`MEA`-`MEF` |Pi wired MAC address |(by octet) | ...     |
- |`MLA`-`MLF` |Pi wifi MAC address  |(by octet) | ...     |
+ |`ID`        |Serial Identifier    | ASCII string  | ...     |
+ |`IP4`       |Pi active IPv4 address | ASCII string | ...     |
+ |`MWR`       |Pi wired MAC address | ASCII string | ...     |
+ |`MWF`       |Pi wifi MAC address  | ASCII string | ...     |
  |`SS`        |Save settings        |Boolean    | `1` (save)     |
 
 
