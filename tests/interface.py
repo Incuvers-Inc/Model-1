@@ -6,14 +6,6 @@ import unittest
 class TestInterface(unittest.TestCase):
     iface = monitor.Interface()
 
-    @classmethod
-    def setUpClass(self):
-        iface = monitor.Interface()
-
-    #@classmethod
-    #def tearDown(self):
-    #    del self.iface
-
     def test_serial_number(self):
         # print("Hardware serial number: {}".format(iface.get_serial_number()))
         # this is only valid for the demo unit
