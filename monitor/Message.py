@@ -46,7 +46,7 @@ class ArduinoDirectiveHandler():
         if param in self.queuedictionary:
             print("The " + param +
                   " parameter was already in the dictionary, updating.")
-        self.selfqueuedictionary[param] = value
+        self.queuedictionary[param] = value
 
     def get_arduino_command_string(self):
         """ Returns a complete string to send to the arduino in order to
@@ -58,7 +58,7 @@ class ArduinoDirectiveHandler():
           None
         """
         arduino_command_string = ""
-        for param in queuedictionary:
+        for param in self.queuedictionary:
             if (len(arduino_command_string) + len(param) + len(str(queuedictionary[param])) + 2) <= 80:
                 if len(arduino_command_string) > 0:
                     arduino_command_string = arduino_command_string + "&"
@@ -67,7 +67,7 @@ class ArduinoDirectiveHandler():
         commandLen = len(arduino_command_string)
         calcCRC = binascii.crc32(arduino_command_string.encode())
         arduino_command_string = str(commandLen) + "~" + format(calcCRC,
-                                                                'X') + "$" + arduino_command_string
+                                                                'X') + "$" + arduino_command_string + "\r"
 
         return arduino_command_string
 
@@ -92,21 +92,15 @@ class ArduinoDirectiveHandler():
         for param in self.queuedictionary:
             self.queuedictionary.pop(param)
 
-    def get_arduino_mac_update_command_string(self, param="ME", mac_addr="00:00:00:00:00:00"):
+    def get_arduino_mac_update_command_string(self, param="MWR", mac_addr="00:00:00:00:00:00"):
         """ Should only be called shortly after a boot
 
         Args:
-          param (str): two-letter code for the start of the parameter (ME for Ethernet, ML for Wifi)
+          param (str): three-letter code for the start of the parameter (MWR for Ethernet, MWF for Wifi)
           mac_addr (str): colon-separated string of the current system's MAC address
         """
         self.clear_queue()
-        mac_bits = mac_addr.split(":")
-        self.enqueue_parameter_update(param + "A", mac_bits[0])
-        self.enqueue_parameter_update(param + "B", mac_bits[1])
-        self.enqueue_parameter_update(param + "C", mac_bits[2])
-        self.enqueue_parameter_update(param + "D", mac_bits[3])
-        self.enqueue_parameter_update(param + "E", mac_bits[4])
-        self.enqueue_parameter_update(param + "F", mac_bits[5])
+        self.enqueue_parameter_update(param, "".join(mac_addr.split(":")))
         cmd_string = self.get_arduino_command_string()
         self.clear_queue()
         return cmd_string
@@ -119,11 +113,7 @@ class ArduinoDirectiveHandler():
           ip_addr (str): string containing the IP address of the item
         """
         self.clear_queue()
-        ip_bits = ip_addr.split(".")
-        self.enqueue_parameter_update("IPA", ip_bits[0])
-        self.enqueue_parameter_update("IPB", ip_bits[1])
-        self.enqueue_parameter_update("IPC", ip_bits[2])
-        self.enqueue_parameter_update("IPD", ip_bits[3])
+        self.enqueue_parameter_update("IP4", ip_addr)
         cmd_string = self.get_arduino_command_string()
         self.clear_queue()
         return cmd_string
@@ -355,7 +345,22 @@ class Sensors():
         self.sensorframe['Time'] = time.strftime(
             "%Y-%m-%d %H:%M:%S", time.gmtime())
         return
+    
+    def send_message_to_arduino(self, msg):
+        '''
+        Will transmit a string to the Arduino via the serial link.
+        
+        Args:
+            msg (string): The message string to be sent to the Arduino, including checksums et all.
+        '''
+        
+        try:
+            self.arduino_link.serial_connection.write(msg.encode())
+        except BaseException:
+            time.sleep(1)
+            print('Error: ', sys.exc_info()[0])
 
+             
 
 if __name__ == '__main__':
 
@@ -374,6 +379,10 @@ if __name__ == '__main__':
     test_commandset = True
     if test_commandset:
         arduino_handler = ArduinoDirectiveHandler()
+        mon = Sensors()
+        
+        mon.send_message_to_arduino(arduino_handler.get_arduino_ip_update_command_string("192.168.42.42"))
+        mon.send_message_to_arduino(arduino_handler.get_arduino_mac_update_command_string("MWR", mon.arduino_link.get_mac_address()))
 
         del arduino_handler
 
