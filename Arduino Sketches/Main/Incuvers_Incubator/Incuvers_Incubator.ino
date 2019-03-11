@@ -61,10 +61,10 @@
 
 
 // Where to find our RaspberryPi; "Serial1" for header interface, "Serial" for USB connection
-#define PILINK_SERIALHANDLE Serial
+#define PILINK_SERIALHANDLE Serial1
 // If using the USB connection for PILINK, comment out both of the following.  If using PiHeader but don't want the serial spam, only comment out the second line
-//#define SERIALPILINKSETTINGS 9600, SERIAL_8E2
-//#define SHOWSERIALSTATUS true
+#define SERIALPILINKSETTINGS 9600, SERIAL_8N1
+#define SHOWSERIALSTATUS true
 
 // Debugging definitions, comment out to disable
 //#define DEBUG_GENERAL true

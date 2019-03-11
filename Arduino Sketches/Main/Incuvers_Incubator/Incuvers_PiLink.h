@@ -6,8 +6,9 @@
    Requires the CRC32 library by Christopher Baker.
 */
 
-#define MAX_INPUT_MESSAGE_SIZE 92
-#define MAX_PAYLOAD_SIZE 80
+#define MAX_INPUT_MESSAGE_SIZE 64
+#define MAX_PAYLOAD_SIZE 52
+#define SERIAL_TIMEOUT 1000
 
 class IncuversPiLink {
   private:
@@ -15,15 +16,16 @@ class IncuversPiLink {
     bool isEnabled;
 
     // Each command will be given on a single line.  In the format of Len~CRC32$Param|Value&Param|Value
-    // A command line may not be longer than 92 characters.
+    // A command line may not be longer than 64 characters (due to the default Arduino buffer size)
     void CheckForCommands() {
       if (PILINK_SERIALHANDLE.available()) {
         boolean lineComplete = false;
         int strLen = 0;
         char stringRead[MAX_INPUT_MESSAGE_SIZE + 1] = "";
         char stringCRC[MAX_INPUT_MESSAGE_SIZE + 1] = "";
+        long timeoutBy = millis() + SERIAL_TIMEOUT;
 
-        while (!lineComplete && strLen < MAX_INPUT_MESSAGE_SIZE) {
+        while (!lineComplete && strLen < MAX_INPUT_MESSAGE_SIZE && millis() < timeoutBy) {
           if (PILINK_SERIALHANDLE.available()) {
             char c = PILINK_SERIALHANDLE.read();
 
