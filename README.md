@@ -81,7 +81,7 @@ Corrupt lines will be ignored as the next should be transmitted within the next 
 When the Pi wishes to update the settings or configuration of the Arduino, one or more commands will be sent over the PiLink.
 The Arduino won’t implicitly confirm the changes however the Pi should verify that the changes have been accepted by ensuring that the settings reported back in the next status update reflect the changes.
 Wherever possible the Parameter names will match in the Pi &rarr; Arduino and Arduino &rarr; Pi systems.
-A command line coming from the Pi will not include a payload of more than 80 characters making a command no longer than 92 characters long.
+A command line coming from the Pi will not include a payload of more than 52 characters making a command no longer than 64 characters long (this limit is due to the default serial buffer size on the Arduino.)
 
 ### Special characters
 There are special characters used parse the message and cannot be used as part of the message: the ampersand `&`; pipe `|`; tilde `~` and dollar sign `$`.
