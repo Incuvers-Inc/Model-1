@@ -102,6 +102,8 @@ html_static_path = ['_static']
 #
 # html_sidebars = {}
 
+html_logo = "./_static/logo.png"
+html_favicon = "./_static/favicon.ico"
 
 # -- Options for HTMLHelp output ---------------------------------------------
 
@@ -178,9 +180,13 @@ epub_title = project
 epub_exclude_files = ['search.html']
 
 
+
 # -- Extension configuration -------------------------------------------------
 
 # -- Options for todo extension ----------------------------------------------
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
+
+
+
