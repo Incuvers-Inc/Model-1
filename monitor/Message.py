@@ -9,6 +9,7 @@ import sys
 import threading
 import time
 import fcntl
+import commands
 
 """
 .. module:: Message
@@ -59,15 +60,17 @@ class ArduinoDirectiveHandler():
         """
         arduino_command_string = ""
         for param in self.queuedictionary:
-            if (len(arduino_command_string) + len(param) + len(str(queuedictionary[param])) + 2) <= 80:
+            if (len(arduino_command_string) + len(param) + len(str(self.queuedictionary[param])) + 2) <= 80:
                 if len(arduino_command_string) > 0:
                     arduino_command_string = arduino_command_string + "&"
                 arduino_command_string = arduino_command_string + \
-                    param + "|" + str(queuedictionary[param])
+                    param + "|" + str(self.queuedictionary[param])
         commandLen = len(arduino_command_string)
-        calcCRC = binascii.crc32(arduino_command_string.encode())
+        arduino_command_string = arduino_command_string + "\r"
+        calcCRC = binascii.crc32(arduino_command_string.encode()) & 0xFFFFFFFF
+        
         arduino_command_string = str(commandLen) + "~" + format(calcCRC,
-                                                                'X') + "$" + arduino_command_string + "\r"
+                                                                'x') + "$" + arduino_command_string + "\n"
 
         return arduino_command_string
 
@@ -89,8 +92,7 @@ class ArduinoDirectiveHandler():
             None
         """
 
-        for param in self.queuedictionary:
-            self.queuedictionary.pop(param)
+        self.queuedictionary.clear()
 
     def get_arduino_mac_update_command_string(self, param="MWR", mac_addr="00:00:00:00:00:00"):
         """ Should only be called shortly after a boot
@@ -118,6 +120,18 @@ class ArduinoDirectiveHandler():
         self.clear_queue()
         return cmd_string
 
+    def get_arduino_serial_update_command_string(self, serial):
+        """ Should only be called after a boot
+
+        Args:
+          serial (str): string containing the serial of the rPi
+        """
+        self.clear_queue()
+        self.enqueue_parameter_update("ID", serial)
+        cmd_string = self.get_arduino_command_string()
+        self.clear_queue()
+        return cmd_string
+
 
 class Interface():
     """ Class that holds everything important concerning communication.
@@ -136,7 +150,7 @@ class Interface():
 
           None
         '''
-        self.serial_connection = serial.Serial('/dev/serial0', 9600)
+        self.serial_connection = serial.Serial(port='/dev/serial0', baudrate=9600, bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, xonxoff=False, rtscts=False, dsrdtr=False)
 
     def connects_to_internet(self, host="8.8.8.8", port=53, timeout=3):
         """ Tests internet connectivity
@@ -160,7 +174,8 @@ class Interface():
 
     def get_serial_number(self):
         """ Get uniqeu serial number
-        Get a unique serial number from the cpu
+        Get a unique serial number from the cpu, shortened
+        for easy readability.
 
         Args:
           None
@@ -171,6 +186,7 @@ class Interface():
                 for line in fp:
                     if line[0:6] == 'Serial':
                         serial = line[10:26]
+                        serial = serial.lstrip("0")
             if serial == "0000000000":
                 raise TypeError('Could not extract serial from /proc/cpuinfo')
         except FileExistsError as err:
@@ -182,6 +198,34 @@ class Interface():
             print(err.message)
         return serial
 
+    def get_iface_list(self):
+        """ Get the list of interfaces
+        
+        Args:
+          None
+          
+        Returns:
+        """
+        return "Not implemented" 
+        
+    def get_iface_hardware_address(self, iface):
+        """ Get the hardware (MAC) address of the given interface
+        
+        Args:
+          iface (str): interface to return the mac off.
+          
+        Returns:
+          str: colon-delimited hardware address
+        """
+        try:
+            mac = open('/sys/class/net/'+iface+'/address').readline()
+        except:
+            hex = uuid.getnode()
+            mac = ':'.join(['{:02x}'.format((hex >> ele) & 0xff)
+                              for ele in range(0, 8*6, 8)][::-1])
+
+        return mac[0:17]
+            
     def get_mac_address(self):
         """ Get the ethernet MAC address
         This returns in the MAC address in the canonical human-reable form
@@ -193,6 +237,19 @@ class Interface():
         formatted = ':'.join(['{:02x}'.format((hex >> ele) & 0xff)
                               for ele in range(0, 8*6, 8)][::-1])
         return formatted
+        
+    def get_ip_address(self):
+        """ Get the primary IP address
+        
+        Args:
+          None
+        
+        Returns:
+          String: standard representation of the device's IP address
+        """
+        ip = commands.getoutput('hostname -I')
+        ip = ip.rstrip()
+        return ip
 
 
 class Sensors():
@@ -249,20 +306,24 @@ class Sensors():
         if (self.verbosity == 1):
             print("starting monitor")
         while True:
-            try:
-                line = self.arduino_link.serial_connection.readline().rstrip()
-                if self.checksum_passed(line):
-                    if (self.verbosity == 1):
-                        print("checksum passed")
-                    with self.lock:
-                        self.save_message_dict(line)
-                else:
-                    if (self.verbosity == 1):
-                        print('Ign: ' + line.decode().rstrip())
-            except BaseException:
-                time.sleep(1)
-                print('Error: ', sys.exc_info()[0])
-                # return
+#            if self.arduino_link.serial_connection.in_waiting:
+                try:
+                    line = self.arduino_link.serial_connection.readline().rstrip()
+                    if self.checksum_passed(line):
+                        if (self.verbosity == 1):
+                            print("checksum passed")
+                        with self.lock:
+                            self.save_message_dict(line)
+                    else:
+                        if (self.verbosity == 1):
+                            print('Ign: ' + line.decode().rstrip())
+                except BaseException as e:
+                    time.sleep(1)
+                    print('Error: ', e)
+                    # return
+#           else:
+ #               print('Waiting... ' + format(self.arduino_link.serial_connection.in_waiting))        
+  #              time.sleep(4)
 
     def pop_param(self, msg, char):
         ''' pop
@@ -306,9 +367,9 @@ class Sensors():
 
         # compare CRC32
         calcCRC = binascii.crc32(msg.rstrip()) & 0xffffffff
-        if format(calcCRC, 'x') == msg_crc:
+        if format(calcCRC, 'x') == msg_crc.lstrip("0"):
             if (self.verbosity == 1):
-                print("CRC32 matches")
+                print("CRC32 matches; message: " + msg)
             return True
         else:
             if (self.verbosity == 1):
@@ -356,20 +417,25 @@ class Sensors():
         
         try:
             self.arduino_link.serial_connection.write(msg.encode())
-        except BaseException:
+            self.arduino_link.serial_connection.flush()
+        except BaseException as e:
             time.sleep(1)
-            print('Error: ', sys.exc_info()[0])
+            print('Error: ', e)
 
              
 
 if __name__ == '__main__':
+    print("PySerial version: " + serial.__version__)
 
     test_connections = False
     test_connections = True
     if test_connections:
         iface = Interface()
         print("Hardware serial number: {}".format(iface.get_serial_number()))
-        print("Hardware address (ethernet): {}".format(iface.get_mac_address()))
+        print("Network interfaces: {}".format(iface.get_iface_list()))
+        print("Hardware address (ethernet): {}".format(iface.get_iface_hardware_address("eth0")))
+        print("Hardware address (wifi): {}".format(iface.get_iface_hardware_address("wlan0")))
+        print("Primary IP address: {}".format(iface.get_ip_address()))
         print("Can connect to the internet: {}".format(iface.connects_to_internet()))
         print("Can contact the mothership: {}".format(
             iface.connects_to_internet(host='35.183.143.177', port=80)))
@@ -380,9 +446,25 @@ if __name__ == '__main__':
     if test_commandset:
         arduino_handler = ArduinoDirectiveHandler()
         mon = Sensors()
+
+        msg0 = arduino_handler.get_arduino_serial_update_command_string(mon.arduino_link.get_serial_number())
+        print("Sending message: " + msg0)
+        mon.send_message_to_arduino(msg0)
+        time.sleep(5)
+
+        msg1 = arduino_handler.get_arduino_ip_update_command_string(mon.arduino_link.get_ip_address())
+        print("Sending message: " + msg1)
+        mon.send_message_to_arduino(msg1)
+        time.sleep(5)
         
-        mon.send_message_to_arduino(arduino_handler.get_arduino_ip_update_command_string("192.168.42.42"))
-        mon.send_message_to_arduino(arduino_handler.get_arduino_mac_update_command_string("MWR", mon.arduino_link.get_mac_address()))
+        msg2 = arduino_handler.get_arduino_mac_update_command_string("MWR", mon.arduino_link.get_iface_hardware_address("eth0"))
+        print("Sending message: " + msg2)
+        mon.send_message_to_arduino(msg2)
+        time.sleep(5)
+        
+        msg3 = arduino_handler.get_arduino_mac_update_command_string("MWF", mon.arduino_link.get_iface_hardware_address("wlan0"))
+        print("Sending message: " + msg3)
+        mon.send_message_to_arduino(msg3)
 
         del arduino_handler
 
