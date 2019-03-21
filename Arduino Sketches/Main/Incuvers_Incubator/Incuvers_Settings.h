@@ -427,32 +427,32 @@ class IncuversSettingsHandler {
     {
       // General Identification
       String piLink = String("TS|" + String(millis(), DEC));
-      piLink = String(piLink + F("&ID|") + String((char *) this->settingsRuntime.piSerial));             // Ident rPi Serial
+      piLink = String(piLink + F("&ID|") + getSerial());             // Ident rPi Serial
       piLink = String(piLink + F("&IV|") + F(SOFTWARE_VER_STRING));                             // Ident Software Version
       piLink = String(piLink + F("&IR|") + String(this->settingsRuntime.valuesVersion));        // Ident Runtime Settings Version
       // Heating/Fan system
       piLink = String(piLink + F("&FM|") + this->settingsHolder.fanMode);                       // Fan, mode
       piLink = String(piLink + F("&TM|") + String(this->settingsHolder.heatMode, DEC));         // Temperature, mode
-      piLink = String(piLink + F("&TP|") + String(this->settingsHolder.heatSetPoint, 2));       // Temperature, setpoint
-      piLink = String(piLink + F("&TC|") + String(incHeat->getChamberTemperature(), 2));        // Temperature, chamber
-      piLink = String(piLink + F("&TD|") + incHeat->getDoorTemperature());                      // Temperature, door
-      piLink = String(piLink + F("&TO|") + incHeat->getOtherTemperature());                     // Temperature, other
+      piLink = String(piLink + F("&TP|") + String(this->settingsHolder.heatSetPoint * 100, 0)); // Temperature, setpoint
+      piLink = String(piLink + F("&TC|") + String(incHeat->getChamberTemperature() * 100, 0));  // Temperature, chamber
+      piLink = String(piLink + F("&TD|") + String(incHeat->getDoorTemperature() * 100, 0));     // Temperature, door
+      piLink = String(piLink + F("&TO|") + String(incHeat->getOtherTemperature() * 100, 0));    // Temperature, other
       piLink = String(piLink + F("&TS|") + String(GetIndicator(incHeat->isDoorOn(), incHeat->isDoorStepping(), false, true)) + String(GetIndicator(incHeat->isChamberOn(), incHeat->isChamberStepping(), false, true)));  // Temperature, status
       piLink = String(piLink + F("&TA|") + String(GetIndicator(incHeat->isAlarmed(), false, false, true)));                                                                                                           // Temperature, alarms
       // CO2 system
       piLink = String(piLink + F("&CM|") + String(this->settingsHolder.CO2Mode, DEC));          // CO2, mode
-      piLink = String(piLink + F("&CP|") + String(this->settingsHolder.CO2SetPoint, 2));        // CO2, setpoint
-      piLink = String(piLink + F("&CC|") + String(incCO2->getCO2Level(), 2));                   // CO2, reading
+      piLink = String(piLink + F("&CP|") + String(this->settingsHolder.CO2SetPoint * 100, 0));  // CO2, setpoint
+      piLink = String(piLink + F("&CC|") + String(incCO2->getCO2Level() * 100, 0));             // CO2, reading
       piLink = String(piLink + F("&CS|") + GetIndicator(incCO2->isCO2Open(), incCO2->isCO2Stepping(), false, true));  // CO2, status
       piLink = String(piLink + F("&CA|") + GetIndicator(incCO2->isAlarmed(), false, false, true));                 // CO2, alarms
       // O2 system
-      piLink = String(piLink + F("&OM|") + String(this->settingsHolder.O2Mode, DEC));         // O2, mode
-      piLink = String(piLink + F("&OP|") + String(this->settingsHolder.O2SetPoint, 2));       // O2, setpoint
-      piLink = String(piLink + F("&OC|") + String(incO2->getO2Level(), 2));                     // O2, reading
+      piLink = String(piLink + F("&OM|") + String(this->settingsHolder.O2Mode, DEC));           // O2, mode
+      piLink = String(piLink + F("&OP|") + String(this->settingsHolder.O2SetPoint * 100, 0));   // O2, setpoint
+      piLink = String(piLink + F("&OC|") + String(incO2->getO2Level() * 100, 0));               // O2, reading
       piLink = String(piLink + F("&OS|") + GetIndicator(incO2->isNOpen(), incO2->isNStepping(), false, true));  // CO2, status
       piLink = String(piLink + F("&OA|") + GetIndicator(incO2->isAlarmed(), false, false, true));               // CO2, alarms
       // Options
-      piLink = String(piLink + F("&LM|") + String(this->settingsHolder.lightMode, DEC));      // Light Mode
+      piLink = String(piLink + F("&LM|") + String(this->settingsHolder.lightMode, DEC));        // Light Mode
       piLink = String(piLink + F("&LS|") + incLight->GetSerialAPIndicator());                   // Light System
       // Debugging
       piLink = String(piLink + F("&FM|") + String(freeMemory(), DEC));                          // Free memory
