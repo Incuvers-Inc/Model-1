@@ -24,7 +24,10 @@
   *      - Moved common environmental management code into its own class.
   *      - Moved to support Control Board 1.0.0 / ATMEGA 2560 controller.
   *      - Added some power management features to limit the current draw.
-  *      - Added support for PiLink.
+  *      - Temporarily disabled alarms due to a bad buzzer on 1.0.1 PCBs.
+  *      - Modified the minimum allowed value for O2 and CO2 setpoint.
+  *      - Fixed heat resume after settings screen.
+  *      - Modified the LCD screen to only update once per second.
   *      
   * 1.10 - Added support for chamber lighting control.
   *      - Started making modules/skeletons to save on memory in Atmega328 implementations.
@@ -84,7 +87,7 @@
 //#define INCLUDE_O2_MODBUS true
 //#define INCLUDE_O2_ANALOG true
 #define INCLUDE_CO2 true
-#define INCLUDE_LIGHT true
+//#define INCLUDE_LIGHT true
 
 // Hardwired settings
 #define PINASSIGN_ONEWIRE_BUS 4

@@ -611,6 +611,13 @@ class IncuversSettingsHandler {
       incO2->MakeSafeState();
     }
 
+    void ReturnFromSafeState() {
+      incHeat->ResumeState(this->settingsHolder.heatMode);
+      // Lighting will resume automatically
+      // CO2 doesn't use EM which requires a restart signal
+      // O2 doesn't use EM which requires a restart signal
+    }
+
     int getLightMode() {
       return this->settingsHolder.lightMode;
     }

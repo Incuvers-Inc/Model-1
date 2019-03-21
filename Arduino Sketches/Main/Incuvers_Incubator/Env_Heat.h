@@ -244,6 +244,20 @@ class IncuversHeatingSystem {
       #endif
       this->EMHandleDoor.Disable();
       this->EMHandleChamber.Disable();
+      digitalWrite(this->pinAssignment_Fan, LOW);        // Turn off the Fan
+    }
+
+    void ResumeState(int heatMode) {
+      #ifdef DEBUG_TEMP
+        Serial.println(F("Heat::ResumeState"));
+      #endif
+      if (heatMode != 0) {
+        this->EMHandleChamber.Enable();
+        this->EMHandleDoor.Enable();
+      }
+      if (this->fanMode == 4) {
+        digitalWrite(this->pinAssignment_Fan, HIGH);       // Turn on the Fan  
+      } 
     }
 
     void DoQuickTick() {
@@ -286,7 +300,7 @@ class IncuversHeatingSystem {
     }
 
     boolean isAlarmed() {
-      if (this->EMHandleDoor.isAlarm_Overshoot() || this->EMHandleDoor.isAlarm_Undershoot() || this->EMHandleChamber.isAlarm_Overshoot() || this->EMHandleChamber.isAlarm_Undershoot()) {
+      if (this->EMHandleDoor.isAlarm_Overshoot() || this->EMHandleChamber.isAlarm_Overshoot() || this->EMHandleChamber.isAlarm_Undershoot()) {
         return true;
       } else {
         return false;
