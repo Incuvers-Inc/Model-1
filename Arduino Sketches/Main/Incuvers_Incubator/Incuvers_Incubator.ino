@@ -1,12 +1,13 @@
 /*
  * INCUVERS INCUBATOR 
- *    Date:    October 2018
+ *    Date:    March 2019
  *    Software version: 1.11
- *    Hardware version: 1.0.0
+ *    Hardware version: 1.0.1
  *    http://incuvers.com/   
  *    
  *    Incuvers team:
  *        Dr. Sebastian Hadjiantoniou
+ *        David Sean
  *        Tim Spekkens
  */
 
@@ -18,6 +19,10 @@
   *      - Moved common environmental management code into its own class.
   *      - Moved to support Control Board 1.0.0 / ATMEGA 2560 controller.
   *      - Added some power management features to limit the current draw.
+  *      - Temporarily disabled alarms due to a bad buzzer on 1.0.1 PCBs.
+  *      - Modified the minimum allowed value for O2 and CO2 setpoint.
+  *      - Fixed heat resume after settings screen.
+  *      - Modified the LCD screen to only update once per second.
   *      
   * 1.10 - Added support for chamber lighting control.
   *      - Started making modules/skeletons to save on memory in Atmega328 implementations.
@@ -57,7 +62,7 @@
 //#define DEBUG_SERIAL true
 //#define DEBUG_EEPROM true
 //#define DEBUG_UI true
-#define DEBUG_EM true
+//#define DEBUG_EM true
 //#define DEBUG_CO2 true
 //#define DEBUG_O2 true
 //#define DEBUG_TEMP true
@@ -70,8 +75,8 @@
 //#define INCLUDE_O2_ANALOG true
 #define INCLUDE_CO2 true
 #define INCLUDE_TEMP true
-#define INCLUDE_LIGHT true
-#define INCLUDE_PILINK true
+//#define INCLUDE_LIGHT true
+//#define INCLUDE_PILINK true
 
 // Hardwired settings
 #define PINASSIGN_ONEWIRE_BUS 4

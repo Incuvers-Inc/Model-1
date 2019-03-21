@@ -7,10 +7,10 @@
 #define TEMPERATURE_MIN 5.0
 #define TEMPERATURE_MAX 75.0
 #define TEMPERATURE_DLT 0.5
-#define CO2_MIN 0.5
+#define CO2_MIN 0.1
 #define CO2_MAX 25.0
 #define CO2_DLT 0.1
-#define OO_MIN 0.5
+#define OO_MIN 0.0
 #define OO_MAX 21.0
 #define OO_DLT 0.1
 
@@ -20,7 +20,8 @@ class IncuversUI {
     IncuversSettingsHandler* incSet;
     int lastButtonState;
     int loopCountButtonState;
-
+    unsigned long lastRefresh;
+    
     void DisplayLoadingBar() {
       for (int s = 0; s<16; s++) {
         this->lcd->setCursor(s,1);
@@ -920,6 +921,7 @@ class IncuversUI {
     
   public:
     void SetupUI() {
+      this->lastRefresh = 0;
       this->lcd = new LiquidTWI2(0);
       this->lcd->setMCPType(LTI_TYPE_MCP23017);
       this->lcd->begin(16, 2);
@@ -1034,6 +1036,7 @@ class IncuversUI {
     void EnterSetupMode() {
       incSet->MakeSafeState();
       SetupLoop();
+      incSet->ReturnFromSafeState();
     }
 
     void WarnOfMissingHardwareSettings() {
@@ -1049,16 +1052,20 @@ class IncuversUI {
     }
     
     void DoTick() {
-      LCDDrawDefaultUI();
-
+      if ((this->lastRefresh + 1000) < millis()) {
+        LCDDrawDefaultUI();
+        SerialPrintStatus();
+        this->lastRefresh = millis();  
+      }
+      
       int userInput = GetButtonState();
       if (userInput == 3) {
         EnterSetupMode();  
       }
    
-      SerialPrintStatus();
       // Do the alarm orchestrator last as it will reset alarms which we want present in the PrintStatus above.
-      AlarmOrchestrator();
+      // Temporarily diabling the alarm orchestrator to help diagnose intermittent issues.
+      //AlarmOrchestrator();
     }
     
 };
