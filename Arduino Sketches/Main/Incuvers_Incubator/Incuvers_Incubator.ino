@@ -11,12 +11,13 @@
  *        Tim Spekkens
  */
 
-#define SOFTWARE_VER_STRING "v1.12 (02)"
+#define SOFTWARE_VER_STRING "v1.12 (03)"
 
  /* Changelog
   * 
   * 1.12 - Added support for PiLink write-back.
-  *      - Modified the serial output format to match the PiLink input format
+  *      - Modified the serial output overall format to match the PiLink input format
+  *      - Modified the serial output value format to match the PiLink input value format
   * 
   * 1.11 - General code clean up and housekeeping.
   *      - Switched serial sensors from streaming mode to on-demand polling.
