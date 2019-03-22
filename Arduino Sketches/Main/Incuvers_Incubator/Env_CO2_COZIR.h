@@ -1,13 +1,4 @@
 #ifdef INCLUDE_CO2 
-#define CO2_STEP_THRESH 0.7
-#define CO2_MULTIPLIER 10.0
-#define CO2_DELTA_JUMP 3000
-#define CO2_DELTA_STEPPING 250
-#define CO2_BLEEDTIME_JUMP 5000
-#define CO2_BLEEDTIME_STEPPING 5000
-#define ALARM_THRESH 1.10
-#define ALARM_CO2_OPEN_PERIOD 600000
-#define ALARM_CO2_READING_PERIOD 1000
 
 class IncuversCO2System {
   private:
@@ -106,7 +97,7 @@ class IncuversCO2System {
               this->started = true;
               this->startCO2At = this->tickTime;
             } else {
-              if (this->startCO2At + ALARM_CO2_OPEN_PERIOD < this->tickTime) {
+              if (this->startCO2At + CO2_ALARM_OPEN_PERIOD < this->tickTime) {
                 alarmUnder = true;
                 #ifdef DEBUG_CO2 
                   Serial.println(F("\tCO2 under-saturation alarm thrown"));
@@ -132,7 +123,7 @@ class IncuversCO2System {
         // CO2 level above setpoint.
         digitalWrite(pinAssignment_Valve, LOW); // just to make sure
         this->started = false;
-        if (level > (setPoint * ALARM_THRESH)) {
+        if (level > (setPoint * CO2_ALARM_THRESH)) {
           // Alarm
           alarmOver = true;
           #ifdef DEBUG_CO2 

@@ -1,5 +1,3 @@
-#define READSENSOR_TIMEOUT 2500
-
 class IncuversSerialSensor {
   private:
 #ifndef USE_2560 
@@ -47,7 +45,7 @@ class IncuversSerialSensor {
       bool confirmed = false;
       String resp = "";
       char inChar;
-      long escapeAfter = millis() + READSENSOR_TIMEOUT;
+      long escapeAfter = millis() + READSENSOR_SERIAL_TIMEOUT;
       
       #ifdef DEBUG_SERIAL
         Serial.println(F("Starting..."));
@@ -98,7 +96,7 @@ class IncuversSerialSensor {
       boolean dataReadComplete = false;
       int i = 0;
       int j = 0;
-      long escapeAfter = millis() + READSENSOR_TIMEOUT;
+      long escapeAfter = millis() + READSENSOR_SERIAL_TIMEOUT;
 
       #ifndef USE_2560 
         // We don't have a hardware serial interface, so make our software serial interface active.
