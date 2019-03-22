@@ -50,6 +50,9 @@
   *     - Improved error condition shutdown handling.
   */
 
+// Get all our static definitions which are shared with the Python code
+#include "Definitions.h"
+
 // Timing definitions
 // Due to the long overflow and millis() reset, which would cause issues for our timing, we elect to reboot the incubator after one month of uptime.
 #define RESET_AFTER_DELTA 2678400000

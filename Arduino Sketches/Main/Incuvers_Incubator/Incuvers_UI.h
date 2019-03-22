@@ -1,19 +1,3 @@
-#define MENU_UI_LOAD_DELAY 75
-#define MENU_UI_POST_DELAY 250
-#define MENU_UI_REDRAW_DELAY 500
-#define BUTTON_SECONDPOLLDELAY 250
-#define BUTTON_LOOPCOUNTFASTFORWARD 5
-#define BUTTON_FASTFORWARDRATE 10
-#define TEMPERATURE_MIN 5.0
-#define TEMPERATURE_MAX 75.0
-#define TEMPERATURE_DLT 0.5
-#define CO2_MIN 0.1
-#define CO2_MAX 25.0
-#define CO2_DLT 0.1
-#define OO_MIN 0.0
-#define OO_MAX 21.0
-#define OO_DLT 0.1
-
 class IncuversUI {
   private:
     LiquidTWI2* lcd;

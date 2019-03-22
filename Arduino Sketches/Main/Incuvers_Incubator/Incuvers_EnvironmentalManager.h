@@ -1,6 +1,3 @@
-#define EM_BLOCKTHREADBELOWMS 650
-#define EM_MAXJUMPLEN 3600000
-
 class IncuversEM {
   private:
     char ident;                     // Character to identify EM Instance in Debugging output.

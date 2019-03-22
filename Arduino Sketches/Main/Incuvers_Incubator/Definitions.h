@@ -1,0 +1,64 @@
+// Hardware settings definitions
+#define HARDWARE_IDENT "M1c"
+#define HARDWARE_ADDRS 4 
+
+// Settings definitions
+#define SETTINGS_IDENT_CURR 111
+#define SETTINGS_ADDRS 64
+
+// EnvironmentalManager parameters
+#define EM_BLOCKTHREADBELOWMS 650
+#define EM_MAXJUMPLEN 3600000
+
+// Sensor Wrapper parameters
+#define READSENSOR_MODBUS_TIMEOUT 1500
+#define READSENSOR_SERIAL_TIMEOUT 2500
+
+// User Interface parameters
+#define MENU_UI_LOAD_DELAY 75
+#define MENU_UI_POST_DELAY 250
+#define MENU_UI_REDRAW_DELAY 500
+#define BUTTON_SECONDPOLLDELAY 250
+#define BUTTON_LOOPCOUNTFASTFORWARD 5
+#define BUTTON_FASTFORWARDRATE 10
+
+// Temperature control definitions
+#define TEMPERATURE_MIN 5.0
+#define TEMPERATURE_DEF 38.0
+#define TEMPERATURE_MAX 75.0
+#define TEMPERATURE_DLT 0.5
+#define TEMPERATURE_STEP_LEN 1200
+#define TEMPERATURE_JUMP_LEN 60000
+#define TEMPERATURE_JUMP_WT 60000
+#define TEMP_ALARM_THRESH 114.0
+#define TEMP_ALARM_ON_PERIOD 7200000
+
+// CO2 control definitions
+#define CO2_MIN 0.1
+#define CO2_DEF 5.0
+#define CO2_MAX 25.0
+#define CO2_DLT 0.1
+#define CO2_STEP_THRESH 0.7
+#define CO2_MULTIPLIER 10.0
+#define CO2_DELTA_JUMP 3000
+#define CO2_DELTA_STEPPING 250
+#define CO2_BLEEDTIME_JUMP 5000
+#define CO2_BLEEDTIME_STEPPING 5000
+#define CO2_ALARM_THRESH 1.10
+#define CO2_ALARM_OPEN_PERIOD 600000
+#define CO2_ALARM_READING_PERIOD 1000
+
+//O2 control definitions
+#define OO_STEP_THRESH 1.01
+#define N_DELTA_JUMP 10000
+#define N_DELTA_STEPPING 250
+#define N_BLEEDTIME_JUMP 2500
+#define N_BLEEDTIME_STEPPING 5000
+#define OO_MIN 0.0
+#define OO_DEF 5.0
+#define OO_MAX 21.0
+#define OO_DLT 0.1
+#define OO_ALARM_THRESH 1.10
+#define OO_ALARM_READING_PERIOD 1000
+#define OO_ALARM_OPEN_PERIOD 600000
+

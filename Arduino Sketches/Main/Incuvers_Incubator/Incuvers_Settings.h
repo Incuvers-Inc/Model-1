@@ -1,16 +1,3 @@
-// Hardware settings definitions
-#define HARDWARE_IDENT "M1c"
-#define HARDWARE_ADDRS 4 
-
-// Settings definitions
-#define SETTINGS_IDENT_CURR 111
-#define SETTINGS_ADDRS 64
-
-// Defaults
-#define TEMPERATURE_DEF 38.0
-#define CO2_DEF 5.0
-#define OO_DEF 5.0
-
 // Structures
 struct HardwareStruct {
   byte ident[3];
