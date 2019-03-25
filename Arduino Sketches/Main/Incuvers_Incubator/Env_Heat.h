@@ -5,6 +5,7 @@
 #define TEMP_ALARM_ON_PERIOD 7200000
 #define TEMPERATURE_DOOR_OFFSET 10
 
+
 class IncuversHeatingSystem {
   private:
     int pinAssignment_Fan;
@@ -213,6 +214,7 @@ class IncuversHeatingSystem {
       }
     }
 
+    void SetSetPoint(float tempSetPoint) {
       this->EMHandleDoor.UpdateDesiredLevel(tempSetPoint+TEMPERATURE_DOOR_OFFSET);
       this->EMHandleChamber.UpdateDesiredLevel(tempSetPoint);
     }
