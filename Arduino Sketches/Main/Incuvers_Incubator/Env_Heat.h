@@ -1,11 +1,3 @@
-#define TEMPERATURE_STEP_LEN 1200
-#define TEMPERATURE_JUMP_LEN 60000
-#define TEMPERATURE_JUMP_WT 60000
-#define TEMP_ALARM_THRESH 114.0
-#define TEMP_ALARM_ON_PERIOD 7200000
-#define TEMPERATURE_DOOR_OFFSET 10
-
-
 class IncuversHeatingSystem {
   private:
     int pinAssignment_Fan;

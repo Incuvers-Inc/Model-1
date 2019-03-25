@@ -1,5 +1,3 @@
-#define READSENSOR_TIMEOUT 1500
-
 class IncuversModbusSensor {
   private:
     SoftwareSerial* ss;
@@ -49,7 +47,7 @@ class IncuversModbusSensor {
       currString.reserve(maxLen+5); 
       int i = 0;
       int j = 0;
-      long escapeAfter = millis() + READSENSOR_TIMEOUT;
+      long escapeAfter = millis() + READSENSOR_MODBUS_TIMEOUT;
       
       return currString;
     }

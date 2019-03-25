@@ -1,12 +1,4 @@
 #ifdef INCLUDE_O2_SERIAL
-#define OO_STEP_THRESH 1.01
-#define N_DELTA_JUMP 10000
-#define N_DELTA_STEPPING 250
-#define N_BLEEDTIME_JUMP 2500
-#define N_BLEEDTIME_STEPPING 5000
-#define ALARM_THRESH 1.10
-#define ALARM_O2_READING_PERIOD 1000
-#define ALARM_O2_OPEN_PERIOD 600000
 
 class IncuversO2System {
   private:
@@ -125,7 +117,7 @@ class IncuversO2System {
               started = true;
               startO2At = tickTime;
             } else {
-              if (startO2At + ALARM_O2_OPEN_PERIOD < tickTime) {
+              if (startO2At + OO_ALARM_OPEN_PERIOD < tickTime) {
                 alarmOver = true;
                 #ifdef DEBUG_O2
                   Serial.println(F("\tO2 over-saturation alarm"));
@@ -151,7 +143,7 @@ class IncuversO2System {
         // O2 level below setpoint.
         digitalWrite(pinAssignment_Valve, LOW); // just to make sure
         started = false;
-        if (level > (setPoint * (1.0 - ALARM_THRESH))) {
+        if (level > (setPoint * (1.0 - OO_ALARM_THRESH))) {
           // Alarm
           alarmUnder = true;
           #ifdef DEBUG_O2
