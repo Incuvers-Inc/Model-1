@@ -3,26 +3,27 @@
 #define TEMPERATURE_JUMP_WT 60000
 #define TEMP_ALARM_THRESH 114.0
 #define TEMP_ALARM_ON_PERIOD 7200000
+#define TEMPERATURE_DOOR_OFFSET 10
 
 class IncuversHeatingSystem {
   private:
     int pinAssignment_Fan;
     int pinAssignment_OneWire;
     int fanMode;
-    
+
     float tempDoor;
     float tempChamber;
     float tempOther;
 
     bool otherTempSensorPresent;
-    
+
     byte sensorAddrDoorTemp[8];
     byte sensorAddrChamberTemp[8];
     byte sensorAddrOtherTemp[8];
-    
+
     IncuversEM EMHandleDoor;
     IncuversEM EMHandleChamber;
-    
+
     OneWire* oneWire;
     DallasTemperature* tempSensors;
 
@@ -35,22 +36,22 @@ class IncuversHeatingSystem {
         Serial.println(addrB[i]);
         #endif
         if (addrA[i] != addrB[i]) {
-          result = false;  
+          result = false;
         }
       }
-      
+
       return result;
     }
-    
+
     void CheckForOtherTempSonsors() {
       int i, j, k;
       byte addr[8];
       bool allocated;
       j=0;
       k=0;
-      
+
       this->otherTempSensorPresent = false;
-      
+
       while(oneWire->search(addr)) {
         #ifdef DEBUG_TEMP
         Serial.print(addr[0]);
@@ -66,7 +67,7 @@ class IncuversHeatingSystem {
           Serial.println(" :: No match");
           k++;
           for( i = 0; i < 8; i++) {
-            sensorAddrOtherTemp[i] = addr[i]; 
+            sensorAddrOtherTemp[i] = addr[i];
             this->otherTempSensorPresent = true;
           }
         }
@@ -83,7 +84,7 @@ class IncuversHeatingSystem {
       #endif
     }
 
-    
+
     void GetTemperatureReadings() {
       #ifdef DEBUG_TEMP
         Serial.println(F("Heat::GetTempRead"));
@@ -91,7 +92,7 @@ class IncuversHeatingSystem {
       boolean updateCompleted = false;
       int i = 0;
       float tD, tC, tO;
-      
+
       while (!updateCompleted) {
         // Request the temperatures
         this->tempSensors->requestTemperatures();
@@ -101,14 +102,14 @@ class IncuversHeatingSystem {
         if (this->otherTempSensorPresent) {
           tO = this->tempSensors->getTempC(this->sensorAddrOtherTemp);
         }
-        
+
         #ifdef DEBUG_TEMP
           Serial.print(F("Door: "));
           Serial.print(tD);
           Serial.print(F("*C  Chamber: "));
           Serial.print(tC);
           Serial.println("*C");
-        #endif  
+        #endif
 
         if (this->otherTempSensorPresent && tO > -40.0 && tO < 85.0 ) {
           this->tempOther = tO;
@@ -116,7 +117,7 @@ class IncuversHeatingSystem {
         if (tD > -40.0 && tD < 85.0 ) {
           this->tempDoor = tD;
         }
-        
+
         if (tC > -40.0 && tC < 85.0 ) {
           this->tempChamber = tC;
           updateCompleted = true;
@@ -125,7 +126,7 @@ class IncuversHeatingSystem {
           #ifdef DEBUG_TEMP
             Serial.print(F("Temperature sensors returned invalid reading"));
             Serial.println(i);
-          #endif 
+          #endif
           if (i > 5) {
             //statusHolder.AlarmTempSensorMalfunction = true;
             updateCompleted = true;
@@ -133,8 +134,8 @@ class IncuversHeatingSystem {
         }
       }
     }
-  
-    
+
+
   public:
     void SetupHeating(int doorPin, int chamberPin, int oneWirePin, byte doorSensorID[8], byte chamberSensorID[8], int heatMode, int fanPin, int fanMode, float tempSetPoint) {
       #ifdef DEBUG_TEMP
@@ -170,7 +171,7 @@ class IncuversHeatingSystem {
       this->EMHandleDoor.SetupEM(char('D'), true, tempSetPoint, 0, doorPin);
       this->EMHandleDoor.SetupEM_Timing(false, TEMP_ALARM_ON_PERIOD, 90.0, true, false, TEMPERATURE_STEP_LEN, false, 0.0);
       this->EMHandleDoor.setupEM_Alarms(true, TEMP_ALARM_THRESH, true, RESET_AFTER_DELTA);  // We have a really long alarm period for the door as we aren't as concerned if it never reaches its destination temperature
-      
+
 
       // MakeSafe
       this->MakeSafeState();
@@ -179,7 +180,7 @@ class IncuversHeatingSystem {
         this->sensorAddrDoorTemp[i] = doorSensorID[i];
         this->sensorAddrChamberTemp[i] = chamberSensorID[i];
       }
-      
+
       // Setup Temperature sensors
       this->pinAssignment_OneWire = oneWirePin;
       this->oneWire = new OneWire(PINASSIGN_ONEWIRE_BUS);       // Setup a oneWire instance to communicate with ANY OneWire devices
@@ -187,10 +188,10 @@ class IncuversHeatingSystem {
 
       this->CheckForOtherTempSonsors();
       tempOther = -100;
-      
+
       // Starting the temperature sensors
       this->tempSensors->begin();
-    
+
       if (heatMode == 0) {
         this->EMHandleDoor.Disable();
         this->EMHandleChamber.Disable();
@@ -200,20 +201,20 @@ class IncuversHeatingSystem {
         this->EMHandleChamber.Enable();
         this->EMHandleDoor.Enable();
       }
-  
+
       // Setup fans
       this->pinAssignment_Fan = fanPin;
       this->fanMode = fanMode;
       pinMode(this->pinAssignment_Fan, OUTPUT);
       if (this->fanMode == 4) {
-        digitalWrite(this->pinAssignment_Fan, HIGH);       // Turn on the Fan  
+        digitalWrite(this->pinAssignment_Fan, HIGH);       // Turn on the Fan
       } else {
         digitalWrite(this->pinAssignment_Fan, LOW);        // Turn off the Fan
       }
     }
-  
+
     void SetSetPoint(float tempSetPoint) {
-      this->EMHandleDoor.UpdateDesiredLevel(tempSetPoint);
+      this->EMHandleDoor.UpdateDesiredLevel(tempSetPoint+TEMPERATURE_DOOR_OFFSET);
       this->EMHandleChamber.UpdateDesiredLevel(tempSetPoint);
     }
 
@@ -232,12 +233,12 @@ class IncuversHeatingSystem {
     void UpdateFanMode(int mode) {
       this->fanMode = mode;
       if (this->fanMode == 4) {
-        digitalWrite(this->pinAssignment_Fan, HIGH);       // Turn on the Fan  
+        digitalWrite(this->pinAssignment_Fan, HIGH);       // Turn on the Fan
       } else {
         digitalWrite(this->pinAssignment_Fan, LOW);        // Turn off the Fan
       }
     }
-  
+
     void MakeSafeState() {
       #ifdef DEBUG_TEMP
         Serial.println(F("Heat::SafeState"));
@@ -256,8 +257,8 @@ class IncuversHeatingSystem {
         this->EMHandleDoor.Enable();
       }
       if (this->fanMode == 4) {
-        digitalWrite(this->pinAssignment_Fan, HIGH);       // Turn on the Fan  
-      } 
+        digitalWrite(this->pinAssignment_Fan, HIGH);       // Turn on the Fan
+      }
     }
 
     void DoQuickTick() {
@@ -265,7 +266,7 @@ class IncuversHeatingSystem {
       // Only doing Chamber as we are only Jolt-Ticking the door.
       this->EMHandleDoor.DoQuickTick();
     }
-    
+
     void DoTick() {
       this->GetTemperatureReadings();
       this->EMHandleChamber.DoUpdateTick(this->tempChamber);
@@ -278,7 +279,7 @@ class IncuversHeatingSystem {
     float getOtherTemperature() {
       return tempOther;
     }
-    
+
     float getDoorTemperature() {
       return tempDoor;
     }
