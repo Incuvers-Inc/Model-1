@@ -1,6 +1,6 @@
 // Hardware tag to ensure incorrect data is not read.
-// M1b = Model 1, release c
-#define HARDWARE_IDENT "M1c"
+// M1b = Model 1, release I (for individual sensors.)
+#define HARDWARE_IDENT "M1I"
 #define HARDWARE_ADDRS 4 
 
 // Structure
@@ -41,6 +41,8 @@ struct HardwareStruct {
 #include "LiquidTWI2.h"
 #include <EEPROM.h>  
 
+#include "serialSensor.h"
+
 HardwareStruct hardwareDefinition;
 LiquidTWI2 lcd(0);
 
@@ -67,26 +69,43 @@ void PerformSaveHardwareDefinition() {
   Serial.println(F("End of PerformSaveHardwareDefintion()"));
 }
 
-void GetTemperatureReadings() {
-  Serial.println(F("Call to GetTemperatureReadings()"));
-  // Request the temperatures
-  sensors.requestTemperatures();
-  // Record the values
-  tempDoor = sensors.getTempC(hardwareDefinition.sensorAddrDoorTemp);
-  tempChmb = sensors.getTempC(hardwareDefinition.sensorAddrChamberTemp);
+void PerformHardwareInventory() {
+  if (hardwareDefinition.countOfTempSensors > 0) {
+  
+  }
 
-  for (int i=0; i < 8; i++) {
-    Serial.print(hardwareDefinition.sensorAddrDoorTemp[i]);
+  if (hardwareDefinition.hasCO2Sensor) {
+    IncuversSerialSensor* co2Sense = new IncuversSerialSensor();
+    co2Sense->Initialize(hardwareDefinition.CO2RxPin, hardwareDefinition.CO2TxPin, "K 2");
+    Serial.print("COZIR sensor details: ");
+    Serial.println(co2Sense->GetCOZIRSensorDetails());
   }
-  Serial.print(F(" (Door) temperature reading: "));
-  Serial.print(tempDoor);
-  Serial.println(F("*C"));
-  for (int i=0; i < 8; i++) {
-    Serial.print(hardwareDefinition.sensorAddrChamberTemp[i]);
+  
+  if (hardwareDefinition.hasO2Sensor) {
+    IncuversSerialSensor* o2Sense = new IncuversSerialSensor();
+    o2Sense->Initialize(hardwareDefinition.O2RxPin, hardwareDefinition.O2TxPin, "M 1");
+    Serial.print("Luminox sensor details: ");
+    Serial.println(o2Sense->GetLuminoxSensorDetails());
+    Serial.print("Luminox all sense: ");
+    Serial.println(o2Sense->GetLuminoxSense());
   }
-  Serial.print(F(" (Chamber) temperature reading: "));
-  Serial.print(tempChmb);
-  Serial.println("*C");
+  
+  if (hardwareDefinition.CO2GasRelay) {
+  
+  }
+  
+  if (hardwareDefinition.O2GasRelay) {
+  
+  }
+  
+  if (hardwareDefinition.piSupport) {
+  
+  }
+  
+  if (hardwareDefinition.lightingSupport) {
+  
+  }
+  
 }
 
 /*  ATMEGA328 Pins In Use:
@@ -146,7 +165,6 @@ void GetTemperatureReadings() {
  */
 void setup() {
   Serial.begin(9600);
-  sensors.begin();
   lcd.setMCPType(LTI_TYPE_MCP23017);
   lcd.begin(16, 2);
   lcd.setCursor(0,0);
@@ -165,45 +183,84 @@ void setup() {
   //      0.9.3 is the original PCB revision for Model 1
   //      1.0.0 is the first Incuvers-sourced PCB
   //      1.0.1 is the first general-use Incuvers PCB
-  //      1.0.2 is the board created in 2019.
-  hardwareDefinition.hVer[0]=%%HVER_A%%;
-  hardwareDefinition.hVer[1]=%%HVER_B%%;
-  hardwareDefinition.hVer[2]=%%HVER_C%%;
+  //      1.0.2 is the board created in 2019. 
+//  hardwareDefinition.hVer[0]=%%HVER_A%%;
+//  hardwareDefinition.hVer[1]=%%HVER_B%%;
+//  hardwareDefinition.hVer[2]=%%HVER_C%%;
   // Hardware serial number
-  hardwareDefinition.serial=%%SERIAL%%;             // Serial number as printed inside the top cover
+//  hardwareDefinition.serial=%%SERIAL%%;             // Serial number as printed inside the top cover
   // Temperature sensors
-  hardwareDefinition.countOfTempSensors=%%TEMPCOUNT%%;    // Count of temperature sensors installed
-  hardwareDefinition.sensorAddrOne[0] = %%TEMPADDR_A%%;
-  hardwareDefinition.sensorAddrOne[1] = %%TEMPADDR_B%%;
-  hardwareDefinition.sensorAddrOne[2] = %%TEMPADDR_C%%;
-  hardwareDefinition.sensorAddrOne[3] = %%TEMPADDR_D%%;
-  hardwareDefinition.sensorAddrOne[4] = %%TEMPADDR_E%%;
-  hardwareDefinition.sensorAddrOne[5] = %%TEMPADDR_F%%;
-  hardwareDefinition.sensorAddrOne[6] = %%TEMPADDR_G%%;
-  hardwareDefinition.sensorAddrOne[7] = %%TEMPADDR_H%%;
+//  hardwareDefinition.countOfTempSensors=%%TEMPCOUNT%%;    // Count of temperature sensors installed
+//  hardwareDefinition.sensorAddrOne[0] = %%TEMPADDR_A%%;
+//  hardwareDefinition.sensorAddrOne[1] = %%TEMPADDR_B%%;
+//  hardwareDefinition.sensorAddrOne[2] = %%TEMPADDR_C%%;
+//  hardwareDefinition.sensorAddrOne[3] = %%TEMPADDR_D%%;
+//  hardwareDefinition.sensorAddrOne[4] = %%TEMPADDR_E%%;
+//  hardwareDefinition.sensorAddrOne[5] = %%TEMPADDR_F%%;
+//  hardwareDefinition.sensorAddrOne[6] = %%TEMPADDR_G%%;
+//  hardwareDefinition.sensorAddrOne[7] = %%TEMPADDR_H%%;
+//  for (int i = 0; i <8; i++) {
+//    hardwareDefinition.sensorAddrTwo[i] = 0;
+//  }
+  // CO2 sensor
+//  hardwareDefinition.hasCO2Sensor = %%CO2_S_E%%;    // Is there a CO2 sensor present?
+//  hardwareDefinition.CO2RxPin     = %%CO2_S_R%%;    // Default: 17
+//  hardwareDefinition.CO2TxPin     = %%CO2_S_T%%;    // Default: 16
+  // Oxygen sensor
+//  hardwareDefinition.hasO2Sensor = %%O2_S_E%%;      // Is there an O2 sensor present?
+//  hardwareDefinition.O2RxPin     = %%O2_S_R%%;      // Default: 15
+//  hardwareDefinition.O2TxPin     = %%O2_S_T%%;      // Default: 14 
+  // Gas Relay
+//  hardwareDefinition.CO2GasRelay = %%CO2_V_E%%;     // Is there a gas valve present for CO2 management?
+//  hardwareDefinition.CO2RelayPin = %%CO2_V_C%%;     // Default: 6
+//  hardwareDefinition.O2GasRelay  = %%O2_V_E%%;      // Is there a gas valve present for O2 management?
+//  hardwareDefinition.O2RelayPin  = %%O2_V_C%%;      // Default: 7
+  // PiLink
+//  hardwareDefinition.piSupport = %%PI_E%%;          // Is there a pi installed?
+//  hardwareDefinition.piRxPin   = %%PI_R%%;          // Default: 19
+//  hardwareDefinition.piTxPin   = %%PI_T%%;          // Default: 18
+  // Lighting
+//  hardwareDefinition.lightingSupport = %%LITE_E%%;  // Is there an internal lighting system?
+//  hardwareDefinition.lightPin        = %%LITE_C%%;  // Default: 2 
+
+  hardwareDefinition.hVer[0]=1;
+  hardwareDefinition.hVer[1]=0;
+  hardwareDefinition.hVer[2]=2;
+  // Hardware serial number
+  hardwareDefinition.serial=99999;             // Serial number as printed inside the top cover
+  // Temperature sensors
+  hardwareDefinition.countOfTempSensors=1;    // Count of temperature sensors installed
+  hardwareDefinition.sensorAddrOne[0] = 1;
+  hardwareDefinition.sensorAddrOne[1] = 4;
+  hardwareDefinition.sensorAddrOne[2] = 0;
+  hardwareDefinition.sensorAddrOne[3] = 0;
+  hardwareDefinition.sensorAddrOne[4] = 0;
+  hardwareDefinition.sensorAddrOne[5] = 0;
+  hardwareDefinition.sensorAddrOne[6] = 0;
+  hardwareDefinition.sensorAddrOne[7] = 0;
   for (int i = 0; i <8; i++) {
     hardwareDefinition.sensorAddrTwo[i] = 0;
   }
   // CO2 sensor
-  hardwareDefinition.hasCO2Sensor = %%CO2_S_E%%;    // Is there a CO2 sensor present?
-  hardwareDefinition.CO2RxPin     = %%CO2_S_R%%;    // Default: 17
-  hardwareDefinition.CO2TxPin     = %%CO2_S_T%%;    // Default: 16
+  hardwareDefinition.hasCO2Sensor = true;    // Is there a CO2 sensor present?
+  hardwareDefinition.CO2RxPin     = 17;    // Default: 17
+  hardwareDefinition.CO2TxPin     = 16;    // Default: 16
   // Oxygen sensor
-  hardwareDefinition.hasO2Sensor = %%O2_S_E%%;      // Is there an O2 sensor present?
-  hardwareDefinition.O2RxPin     = %%O2_S_R%%;      // Default: 15
-  hardwareDefinition.O2TxPin     = %%O2_S_T%%;      // Default: 14 
+  hardwareDefinition.hasO2Sensor = true;      // Is there an O2 sensor present?
+  hardwareDefinition.O2RxPin     = 15;      // Default: 15
+  hardwareDefinition.O2TxPin     = 14;      // Default: 14 
   // Gas Relay
-  hardwareDefinition.CO2GasRelay = %%CO2_V_E%%;     // Is there a gas valve present for CO2 management?
-  hardwareDefinition.CO2RelayPin = %%CO2_V_C%%;     // Default: 6
-  hardwareDefinition.O2GasRelay  = %%O2_V_E%%;      // Is there a gas valve present for O2 management?
-  hardwareDefinition.O2RelayPin  = %%O2_V_C%%;      // Default: 7
+  hardwareDefinition.CO2GasRelay = true;     // Is there a gas valve present for CO2 management?
+  hardwareDefinition.CO2RelayPin = 6;     // Default: 6
+  hardwareDefinition.O2GasRelay  = true;      // Is there a gas valve present for O2 management?
+  hardwareDefinition.O2RelayPin  = 7;      // Default: 7
   // PiLink
-  hardwareDefinition.piSupport = %%PI_E%%;          // Is there a pi installed?
-  hardwareDefinition.piRxPin   = %%PI_R%%;          // Default: 19
-  hardwareDefinition.piTxPin   = %%PI_T%%;          // Default: 18
+  hardwareDefinition.piSupport = true;          // Is there a pi installed?
+  hardwareDefinition.piRxPin   = 19;          // Default: 19
+  hardwareDefinition.piTxPin   = 18;          // Default: 18
   // Lighting
-  hardwareDefinition.lightingSupport = %%LITE_E%%;  // Is there an internal lighting system?
-  hardwareDefinition.lightPin        = %%LITE_C%%;  // Default: 2 
+  hardwareDefinition.lightingSupport = false;  // Is there an internal lighting system?
+  hardwareDefinition.lightPin        = 2;  // Default: 2 
 
   delay (1000);
   
@@ -242,7 +299,6 @@ void setup() {
   PerformHardwareInventory();
   lcd.print(F("Done!"));
   delay(1000);
-
 }
 
 void loop() {

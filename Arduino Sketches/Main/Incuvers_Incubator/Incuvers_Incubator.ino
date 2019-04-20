@@ -11,19 +11,20 @@
  *        Tim Spekkens
  */
 
-#define SOFTWARE_VER_STRING "v1.12 (03)"
+#define SOFTWARE_VER_STRING "v1.12 (04)"
 
  /* Changelog
   * 
   * 1.12 - Added support for PiLink write-back.
   *      - Modified the serial output overall format to match the PiLink input format
   *      - Modified the serial output value format to match the PiLink input value format
+  *      - Added support for Control Board 1.0.2
   * 
   * 1.11 - General code clean up and housekeeping.
   *      - Switched serial sensors from streaming mode to on-demand polling.
   *      - Added support for Modbus-based or voltage-based luminox sensors.
   *      - Moved common environmental management code into its own class.
-  *      - Moved to support Control Board 1.0.0 / ATMEGA 2560 controller.
+  *      - Moved to support Control Board 1.0.0/1 / ATMEGA 2560 controller.
   *      - Added some power management features to limit the current draw.
   *      - Added support for PiLink.
   *      
