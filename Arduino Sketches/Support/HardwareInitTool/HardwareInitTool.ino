@@ -229,13 +229,13 @@ void setup() {
   // Hardware serial number
   hardwareDefinition.serial=99999;             // Serial number as printed inside the top cover
   // Temperature sensors
-  hardwareDefinition.countOfTempSensors=1;    // Count of temperature sensors installed
+  hardwareDefinition.countOfTempSensors=3;    // Count of temperature sensors installed
   hardwareDefinition.sensorAddrOne[0] = 1;
   hardwareDefinition.sensorAddrOne[1] = 4;
-  hardwareDefinition.sensorAddrOne[2] = 0;
-  hardwareDefinition.sensorAddrOne[3] = 0;
-  hardwareDefinition.sensorAddrOne[4] = 0;
-  hardwareDefinition.sensorAddrOne[5] = 0;
+  hardwareDefinition.sensorAddrOne[2] = 2;
+  hardwareDefinition.sensorAddrOne[3] = 49;
+  hardwareDefinition.sensorAddrOne[4] = 3;
+  hardwareDefinition.sensorAddrOne[5] = 22;
   hardwareDefinition.sensorAddrOne[6] = 0;
   hardwareDefinition.sensorAddrOne[7] = 0;
   for (int i = 0; i <8; i++) {

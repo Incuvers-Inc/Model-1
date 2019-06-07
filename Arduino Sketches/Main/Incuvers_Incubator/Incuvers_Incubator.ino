@@ -1,6 +1,6 @@
 /*
  * INCUVERS INCUBATOR 
- *    Date:    February 2019
+ *    Date:    March 2019
  *    Software version: 1.12
  *    Hardware version: 1.0.2
  *    http://incuvers.com/   
@@ -11,7 +11,7 @@
  *        Tim Spekkens
  */
 
-#define SOFTWARE_VER_STRING "v1.12 (04)"
+#define SOFTWARE_VER_STRING "v1.12 (05)"
 
  /* Changelog
   * 
@@ -76,8 +76,8 @@
 //#define DEBUG_EM true
 //#define DEBUG_CO2 true
 //#define DEBUG_O2 true
-//#define DEBUG_TEMP true
-#define DEBUG_PILINK true
+#define DEBUG_TEMP true
+//#define DEBUG_PILINK true
 //#define DEBUG_LIGHT true
 //#define DEBUG_MEMORY true
 
@@ -88,7 +88,7 @@
 #define INCLUDE_CO2 true
 #define INCLUDE_LIGHT true
 
-// Hardwired settings
+// Hardwired settings (OneWire for legacy reasons)
 #define PINASSIGN_ONEWIRE_BUS 4
 #define PINASSIGN_HEATDOOR 8
 #define PINASSIGN_HEATCHAMBER 9
