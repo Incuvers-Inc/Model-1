@@ -1,9 +1,10 @@
 // Hardware settings definitions
-#define HARDWARE_IDENT "M1c"
+#define HARDWARE_IDENT_OLD "M1c"
+#define HARDWARE_IDENT_NEW "M1I"
 #define HARDWARE_ADDRS 4 
 
 // Settings definitions
-#define SETTINGS_IDENT_CURR 111
+#define SETTINGS_IDENT_CURR 112
 #define SETTINGS_ADDRS 64
 
 // Defaults
@@ -87,6 +88,8 @@ class IncuversSettingsHandler {
     IncuversLightingSystem* incLight;
     IncuversCO2System* incCO2;
     IncuversO2System* incO2;
+
+    boolean newHardwareConfig; 
     
     int personalityCount;
 
@@ -110,6 +113,7 @@ class IncuversSettingsHandler {
       
       byte eepromContent[4];
       boolean success = true;
+      boolean newStyle = false;
       int ret;
       
       int j;
@@ -125,14 +129,28 @@ class IncuversSettingsHandler {
     
       if (isHardware) {
         for (int i = 0; i < j; i++) {
-          if (eepromContent[i] != HARDWARE_IDENT[i]) {
+          if (eepromContent[i] != HARDWARE_IDENT_NEW[i]) {
             success = false;
           }
         }
         if (success) {
+          newStyle = true;
+          this->newHardwareConfig = true;
           ret = 1;
         } else {
-          ret = -1;
+          success = true;
+          for (int i = 0; i < j; i++) {
+            if (eepromContent[i] != HARDWARE_IDENT_OLD[i]) {
+              success = false;
+            }
+          }
+          if (success) {
+            newStyle = false;
+            this->newHardwareConfig = false;
+            ret = 2;
+          } else {
+            ret = -1;
+          }
         }
       } else {
         if (eepromContent[0] == SETTINGS_IDENT_CURR) {
@@ -368,15 +386,27 @@ class IncuversSettingsHandler {
     void AttachIncuversModule(IncuversHeatingSystem* iHeat) {
       this->incHeat = iHeat;
 
-      this->incHeat->SetupHeating(PINASSIGN_HEATDOOR, 
-                      PINASSIGN_HEATCHAMBER, 
-                      PINASSIGN_ONEWIRE_BUS, 
-                      this->settingsHardware.sensorAddrDoorTemp,
-                      this->settingsHardware.sensorAddrChamberTemp,
-                      this->settingsHolder.heatMode,
-                      PINASSIGN_FAN,
-                      this->settingsHolder.fanMode,
-                      this->settingsHolder.heatSetPoint);
+      if (this->newHardwareConfig) {
+        this->incHeat->SetupNewHeating(PINASSIGN_HEATDOOR, 
+                        PINASSIGN_HEATCHAMBER,
+                        this->settingsHardware.sensorAddrDoorTemp[3],
+                        this->settingsHardware.sensorAddrDoorTemp[1],
+                        this->settingsHardware.sensorAddrDoorTemp[5],
+                        this->settingsHolder.heatMode,
+                        PINASSIGN_FAN,
+                        this->settingsHolder.fanMode,
+                        this->settingsHolder.heatSetPoint);
+      } else {
+        this->incHeat->SetupHeating(PINASSIGN_HEATDOOR, 
+                        PINASSIGN_HEATCHAMBER, 
+                        PINASSIGN_ONEWIRE_BUS, 
+                        this->settingsHardware.sensorAddrDoorTemp,
+                        this->settingsHardware.sensorAddrChamberTemp,
+                        this->settingsHolder.heatMode,
+                        PINASSIGN_FAN,
+                        this->settingsHolder.fanMode,
+                        this->settingsHolder.heatSetPoint);
+      }
     }
 
     IncuversHeatingSystem* getHeatModule() {

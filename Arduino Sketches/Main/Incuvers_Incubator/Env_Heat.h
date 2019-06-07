@@ -7,12 +7,16 @@
 class IncuversHeatingSystem {
   private:
     int pinAssignment_Fan;
-    int pinAssignment_OneWire;
     int fanMode;
     
     float tempDoor;
     float tempChamber;
     float tempOther;
+
+    boolean oneTempSensorInterface;
+    boolean tempSensorAux;
+    boolean tempSensorChamber;
+    boolean tempSensorDoor;
 
     bool otherTempSensorPresent;
     
@@ -22,9 +26,14 @@ class IncuversHeatingSystem {
     
     IncuversEM EMHandleDoor;
     IncuversEM EMHandleChamber;
-    
-    OneWire* oneWire;
-    DallasTemperature* tempSensors;
+
+    OneWire* oneWireA;
+    OneWire* oneWireC;
+    OneWire* oneWireD;
+    DallasTemperature* tempSensorsA;
+    DallasTemperature* tempSensorsC;
+    DallasTemperature* tempSensorsD;
+
 
     bool AreSensorsSame(byte addrA[], byte addrB[]) {
       bool result = true;
@@ -51,7 +60,7 @@ class IncuversHeatingSystem {
       
       this->otherTempSensorPresent = false;
       
-      while(oneWire->search(addr)) {
+      while(oneWireA->search(addr)) {
         #ifdef DEBUG_TEMP
         Serial.print(addr[0]);
         Serial.print(addr[1]);
@@ -94,12 +103,12 @@ class IncuversHeatingSystem {
       
       while (!updateCompleted) {
         // Request the temperatures
-        this->tempSensors->requestTemperatures();
+        this->tempSensorsA->requestTemperatures();
         // Record the values
-        tD = this->tempSensors->getTempC(this->sensorAddrDoorTemp);
-        tC = this->tempSensors->getTempC(this->sensorAddrChamberTemp);
+        tD = this->tempSensorsA->getTempC(this->sensorAddrDoorTemp);
+        tC = this->tempSensorsA->getTempC(this->sensorAddrChamberTemp);
         if (this->otherTempSensorPresent) {
-          tO = this->tempSensors->getTempC(this->sensorAddrOtherTemp);
+          tO = this->tempSensorsA->getTempC(this->sensorAddrOtherTemp);
         }
         
         #ifdef DEBUG_TEMP
@@ -134,6 +143,67 @@ class IncuversHeatingSystem {
       }
     }
   
+    void GetNewTemperatureReadings() {
+      #ifdef DEBUG_TEMP
+        Serial.println(F("Heat::GetNewTempRead"));
+      #endif
+      boolean updateCompleted = false;
+      int i = 0;
+      float tD, tC, tO;
+      
+      while (!updateCompleted) {
+        // Request the temperatures
+        if (this->tempSensorAux) {
+          this->tempSensorsA->requestTemperatures();
+        }
+        if (this->tempSensorChamber) {
+          this->tempSensorsC->requestTemperatures();
+        }
+        if (this->tempSensorDoor) {
+          this->tempSensorsD->requestTemperatures();
+        }
+        // Record the values
+        if (this->tempSensorDoor) {
+          tD = this->tempSensorsD->getTempCByIndex(0);
+        }
+        if (this->tempSensorChamber) {
+          tC = this->tempSensorsC->getTempCByIndex(0);
+        }
+        if (this->tempSensorAux) {
+          tO = this->tempSensorsA->getTempCByIndex(0);
+        }
+        
+        #ifdef DEBUG_TEMP
+          Serial.print(F("Door: "));
+          Serial.print(tD);
+          Serial.print(F("*C  Chamber: "));
+          Serial.print(tC);
+          Serial.println("*C");
+        #endif  
+
+        if (this->tempSensorAux && tO > -40.0 && tO < 85.0 ) {
+          this->tempOther = tO;
+        }
+        if (tD > -40.0 && tD < 85.0 ) {
+          this->tempDoor = tD;
+        }
+        
+        if (tC > -40.0 && tC < 85.0 ) {
+          this->tempChamber = tC;
+          updateCompleted = true;
+        } else {
+          i++;
+          #ifdef DEBUG_TEMP
+            Serial.print(F("Temperature sensors returned invalid reading"));
+            Serial.println(i);
+          #endif 
+          if (i > 5) {
+            //statusHolder.AlarmTempSensorMalfunction = true;
+            updateCompleted = true;
+          }
+        }
+      }
+    }
     
   public:
     void SetupHeating(int doorPin, int chamberPin, int oneWirePin, byte doorSensorID[8], byte chamberSensorID[8], int heatMode, int fanPin, int fanMode, float tempSetPoint) {
@@ -141,7 +211,6 @@ class IncuversHeatingSystem {
         Serial.println(F("Heat::Setup"));
         Serial.println(doorPin);
         Serial.println(chamberPin);
-        Serial.println(oneWirePin);
         Serial.print(doorSensorID[0]);
         Serial.print(doorSensorID[1]);
         Serial.print(doorSensorID[2]);
@@ -163,6 +232,9 @@ class IncuversHeatingSystem {
         Serial.println(fanMode);
       #endif
 
+      // OldSchool hardware
+      this->oneTempSensorInterface = true;
+      
       // Setup EMs
       this->EMHandleChamber.SetupEM(char('C'), true, tempSetPoint, 0, chamberPin);
       this->EMHandleChamber.SetupEM_Timing(false, TEMP_ALARM_ON_PERIOD, 90.0, true, false, TEMPERATURE_STEP_LEN, false, 0.0);
@@ -181,15 +253,92 @@ class IncuversHeatingSystem {
       }
       
       // Setup Temperature sensors
-      this->pinAssignment_OneWire = oneWirePin;
-      this->oneWire = new OneWire(PINASSIGN_ONEWIRE_BUS);       // Setup a oneWire instance to communicate with ANY OneWire devices
-      this->tempSensors = new DallasTemperature(this->oneWire);          // Pass our oneWire reference to Dallas Temperature.
+      this->oneWireA = new OneWire(PINASSIGN_ONEWIRE_BUS);       // Setup a oneWireA instance to communicate with ANY oneWireA devices
+      this->tempSensorsA = new DallasTemperature(this->oneWireA);          // Pass our oneWireA reference to Dallas Temperature.
 
       this->CheckForOtherTempSonsors();
       tempOther = -100;
       
       // Starting the temperature sensors
-      this->tempSensors->begin();
+      this->tempSensorsA->begin();
+    
+      if (heatMode == 0) {
+        this->EMHandleDoor.Disable();
+        this->EMHandleChamber.Disable();
+        tempDoor = -100;
+        tempChamber = -100;
+      } else {
+        this->EMHandleChamber.Enable();
+        this->EMHandleDoor.Enable();
+      }
+  
+      // Setup fans
+      this->pinAssignment_Fan = fanPin;
+      this->fanMode = fanMode;
+      pinMode(this->pinAssignment_Fan, OUTPUT);
+      if (this->fanMode == 4) {
+        digitalWrite(this->pinAssignment_Fan, HIGH);       // Turn on the Fan  
+      } else {
+        digitalWrite(this->pinAssignment_Fan, LOW);        // Turn off the Fan
+      }
+    }
+  
+    void SetupNewHeating(int doorPin, int chamberPin, byte doorSensorPin, byte chamberSensorPin, byte auxSensorPin, int heatMode, int fanPin, int fanMode, float tempSetPoint) {
+      #ifdef DEBUG_TEMP
+        Serial.println(F("Heat::Setup"));
+        Serial.println(doorPin);
+        Serial.println(chamberPin);
+        Serial.println(doorSensorPin);
+        Serial.println(chamberSensorPin);
+        Serial.println(auxSensorPin);
+        Serial.println(heatMode);
+        Serial.println(fanPin);
+        Serial.println(fanMode);
+      #endif
+
+      // OldSchool hardware
+      this->oneTempSensorInterface = false;
+      
+      // Setup EMs
+      this->EMHandleChamber.SetupEM(char('C'), true, tempSetPoint, 0, chamberPin);
+      this->EMHandleChamber.SetupEM_Timing(false, TEMP_ALARM_ON_PERIOD, 90.0, true, false, TEMPERATURE_STEP_LEN, false, 0.0);
+      this->EMHandleChamber.setupEM_Alarms(true, TEMP_ALARM_THRESH, true, TEMP_ALARM_ON_PERIOD);
+      this->EMHandleDoor.SetupEM(char('D'), true, tempSetPoint, 0, doorPin);
+      this->EMHandleDoor.SetupEM_Timing(false, TEMP_ALARM_ON_PERIOD, 90.0, true, false, TEMPERATURE_STEP_LEN, false, 0.0);
+      this->EMHandleDoor.setupEM_Alarms(true, TEMP_ALARM_THRESH, true, RESET_AFTER_DELTA);  // We have a really long alarm period for the door as we aren't as concerned if it never reaches its destination temperature
+      
+      // MakeSafe
+      this->MakeSafeState();
+      
+      // Setup Temperature sensors
+      if (auxSensorPin != 0) {
+        this->oneWireA = new OneWire(auxSensorPin);                  // Setup a oneWire instance to communicate with aux oneWire devices
+        this->tempSensorsA = new DallasTemperature(this->oneWireA);  // Pass our oneWireA reference to Dallas Temperature.
+        this->tempSensorAux = true;
+      } else {
+        this->tempSensorAux = false;
+      }
+
+      if (chamberSensorPin != 0) {
+        this->oneWireC = new OneWire(chamberSensorPin);              // Setup a oneWire instance to communicate with chamber oneWire devices
+        this->tempSensorsC = new DallasTemperature(this->oneWireC);  // Pass our oneWireC reference to Dallas Temperature.
+        this->tempSensorChamber = true;
+      } else {
+        this->tempSensorChamber = false;
+      }
+
+      if (doorSensorPin != 0) {
+        this->oneWireD = new OneWire(doorSensorPin);                 // Setup a oneWire instance to communicate with door oneWire devices
+        this->tempSensorsD = new DallasTemperature(this->oneWireD);  // Pass our oneWireD reference to Dallas Temperature.
+        this->tempSensorDoor = true;
+      } else {
+        this->tempSensorDoor = false;
+      }
+
+      // Starting the temperature sensors
+      this->tempSensorsA->begin();
+      this->tempSensorsC->begin();
+      this->tempSensorsD->begin();
     
       if (heatMode == 0) {
         this->EMHandleDoor.Disable();
@@ -266,7 +415,11 @@ class IncuversHeatingSystem {
     }
     
     void DoTick() {
-      this->GetTemperatureReadings();
+      if (this->oneTempSensorInterface) {
+        this->GetTemperatureReadings();
+      } else {
+        this->GetNewTemperatureReadings();
+      }
       this->EMHandleChamber.DoUpdateTick(this->tempChamber);
       this->EMHandleDoor.DoUpdateTick(this->tempDoor);
     }
