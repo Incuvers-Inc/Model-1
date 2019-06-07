@@ -227,7 +227,7 @@ void setup() {
   hardwareDefinition.hVer[1]=0;
   hardwareDefinition.hVer[2]=2;
   // Hardware serial number
-  hardwareDefinition.serial=99999;             // Serial number as printed inside the top cover
+  hardwareDefinition.serial=9999;             // Serial number as printed inside the top cover
   // Temperature sensors
   hardwareDefinition.countOfTempSensors=3;    // Count of temperature sensors installed
   hardwareDefinition.sensorAddrOne[0] = 1;
@@ -321,4 +321,3 @@ void loop() {
     delay(1000);
   }
 }
-
