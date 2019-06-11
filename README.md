@@ -145,10 +145,10 @@ Environmental:
  Triggering the calibration procedure through the UI isn't yet supported (a manual call to `iCO2->CalibrateFreshAir()` is needed).
 The calibration is can be triggered by sending the string the parameter pair `CG|1` from a connected raspberry pi (via the message `4~3ab55f3b$CG|1`).
 
-The arduino will confirm the request by advertising a recent calibration by broadcasting `CG|1` instead of `CG|0`.
-After 5 days or a reset, the default broadcast of `CG|0` resume.
+The Arduino will confirm the request by advertising a recent calibration by broadcasting `CG|1` instead of `CG|0`.
+After 5 days or a reboot, the messages will revert to the default broadcast of `CG|0`.
 
-The O2 sensor does not need periodic calibration.
+The O2 sensor does not need a periodic calibration.
 
 ##### Fresh-air calibration procedure.
 Prior to a calibration call, the environment in the incubator must be as close as possible to "fresh-air" conditions (400ppm is assumed).
