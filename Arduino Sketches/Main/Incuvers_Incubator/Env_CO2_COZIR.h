@@ -18,7 +18,9 @@ class IncuversCO2System {
     long actionpoint;
     long startCO2At;
     long shutCO2At;
+    long lastCalibration;
 
+    boolean recentlyCalibrated;
     boolean enabled;
     boolean on;
     boolean stepping;
@@ -150,6 +152,8 @@ class IncuversCO2System {
 
       this->enabled = false;
       level = -100;
+      this->recentlyCalibrated = false;
+      this->lastCalibration=0;
       // Setup Serial Interface
       this->iSS = new IncuversSerialSensor();
       this->iSS->Initialize(rxPin, txPin, "K 2", "Z");
@@ -197,7 +201,13 @@ class IncuversCO2System {
         if (mode == 2) {
           this->CheckCO2Maintenance();
         }
+
       }
+      // keep recently_calibrated flag true for 5 days
+      if (recentlyCalibrated  and abs(millis() - this->lastCalibration)>432000000) {
+            recentlyCalibrated = false;
+      }
+
     }
 
     float getCO2Level() {
@@ -238,22 +248,25 @@ class IncuversCO2System {
     }
 
     void CalibrateFreshAir() {
-    String cozirString = "";
-    #ifdef DEBUG_SERIAL
-      Serial.print(F("Calibrate CO2 with fresh-air has been invoked"));
-      Serial.println(F("calling GetSerialSensorReading()..."));
-    #endif
-    delay(200);
-    cozirString = this->iSS->SendStringCommand("G");
-    #ifdef DEBUG_SERIAL
-      Serial.print(F("Returned from GetSerialSensorReading()"));
-      Serial.print(cozirString);
-      // chould be "G 32950\r\n"
-      Serial.print(F("should be: G 32950\r\n"));
-
-    #endif
-    delay(200);
+      String cozirString = "";
+      #ifdef DEBUG_SERIAL
+        Serial.print(F("Calibrate CO2 with fresh-air has been invoked"));
+        Serial.println(F("calling GetSerialSensorReading()..."));
+      #endif
+      cozirString = this->iSS->SendStringCommand("G");
+      #ifdef DEBUG_SERIAL
+        Serial.print(F("Returned from GetSerialSensorReading()"));
+        Serial.print(cozirString);
+        Serial.print(F("should be: G 32950\r\n"));
+      #endif
+      this->recentlyCalibrated= true;
+      this->lastCalibration = millis();
     }
+
+    boolean isRecentlyCalibrated() {
+      return this->recentlyCalibrated;
+    }
+
 
 };
 

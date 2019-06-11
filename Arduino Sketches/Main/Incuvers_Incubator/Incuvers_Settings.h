@@ -475,6 +475,7 @@ class IncuversSettingsHandler {
       piLink = String(piLink + F("&CC|") + String(incCO2->getCO2Level() * 100, 0));             // CO2, reading
       piLink = String(piLink + F("&CS|") + GetIndicator(incCO2->isCO2Open(), incCO2->isCO2Stepping(), false, true));  // CO2, status
       piLink = String(piLink + F("&CA|") + GetIndicator(incCO2->isAlarmed(), false, false, true));                 // CO2, alarms
+      piLink = String(piLink + F("&CG|") + String(incCO2->isRecentlyCalibrated(), DEC));             // CO2, reading
       // O2 system
       piLink = String(piLink + F("&OM|") + String(this->settingsHolder.O2Mode, DEC));           // O2, mode
       piLink = String(piLink + F("&OP|") + String(this->settingsHolder.O2SetPoint * 100, 0));   // O2, setpoint
