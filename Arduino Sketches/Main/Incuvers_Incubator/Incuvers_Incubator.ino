@@ -1,25 +1,25 @@
 /*
- * INCUVERS INCUBATOR 
- *    Date:    March 2019
+ * INCUVERS INCUBATOR
+ *    Date:    June 2019
  *    Software version: 1.12
  *    Hardware version: 1.0.2
- *    http://incuvers.com/   
- *    
+ *    http://incuvers.com/
+ *
  *    Incuvers team:
  *        Dr. Sebastian Hadjiantoniou
  *        David Sean
  *        Tim Spekkens
  */
 
-#define SOFTWARE_VER_STRING "v1.12 (05)"
+#define SOFTWARE_VER_STRING "v1.12 (06)"
 
  /* Changelog
-  * 
+  *
   * 1.12 - Added support for PiLink write-back.
   *      - Modified the serial output overall format to match the PiLink input format
   *      - Modified the serial output value format to match the PiLink input value format
   *      - Added support for Control Board 1.0.2
-  * 
+  *
   * 1.11 - General code clean up and housekeeping.
   *      - Switched serial sensors from streaming mode to on-demand polling.
   *      - Added support for Modbus-based or voltage-based luminox sensors.
@@ -30,28 +30,28 @@
   *      - Modified the minimum allowed value for O2 and CO2 setpoint.
   *      - Fixed heat resume after settings screen.
   *      - Modified the LCD screen to only update once per second.
-  *      
+  *
   * 1.10 - Added support for chamber lighting control.
   *      - Started making modules/skeletons to save on memory in Atmega328 implementations.
-  * 
+  *
   * 1.9 - Moved key configuration elements to hardware-specific settings store.
   *     - Rewrote the serial sensor monitoring systems.
   *     - Subdivided code into several files in order to aid in maintenance.
   *     - Added selectable fan modes
   *     - improved the DEBUG options for smaller compiled results in production environments.
   *     - removed ability to import settings
-  *     
+  *
   * 1.8 - Addition of support for Digital O2 sensors.
   *
   * 1.7 - Addition of O2 sensor and related hardware
-  * 
+  *
   * 1.6 - Bug fixes pertaining to display, alarms, and menu functionality.
-  * 
+  *
   * 1.5 - Rewriting of alarm handling code.
   *     - Addition of better sensor error detection and warning.
-  * 
+  *
   * 1.4 - Rewrote the majority of the code for better stack efficiency and to allow for parallel operations.
-  * 
+  *
   * 1.3 - Added the ability to save settings to the EEPROM.
   *     - Fixed error leading to temperature sensors becoming swapped.
   *     - Improved error condition shutdown handling.
@@ -101,7 +101,7 @@
 // OneWire and DallasTemperature libraries used for reading the heat sensors
 #include "OneWire.h"
 #include "DallasTemperature.h"
-#ifndef USE_2560 
+#ifndef USE_2560
   // Serial library used for querying the CO2/O2 sensor (ATMEGA 328 compatibility)
   #include "SoftwareSerial.h"
 #endif
@@ -113,9 +113,9 @@
 #include "Wire.h"
 #include "LiquidTWI2.h"
 // EEPROM library used for accessing settings
-#include <EEPROM.h>  
+#include <EEPROM.h>
 
-// Incuvers modules 
+// Incuvers modules
 #include "Incuvers_Common.h"
 #include "Incuvers_EnvironmentalManager.h"
 
@@ -162,7 +162,7 @@ void setup() {
   iUI = new IncuversUI();
   iUI->SetupUI();
   iUI->DisplayStartup();
-  
+
   iSettings = new IncuversSettingsHandler();
   int runMode = 0; // 0 = uninitialized
                    // 1 = saved settings
@@ -179,7 +179,7 @@ void setup() {
 
   iLight = new IncuversLightingSystem();
   iSettings->AttachIncuversModule(iLight);
-  
+
   iCO2 = new IncuversCO2System();
   iSettings->AttachIncuversModule(iCO2);
   
@@ -188,9 +188,9 @@ void setup() {
 
   iPi = new IncuversPiLink();
   iPi->SetupPiLink(iSettings);
-  
+
   iUI->AttachSettings(iSettings);
-  iUI->DisplayRunMode(runMode); 
+  iUI->DisplayRunMode(runMode);
   if (runMode == 2) {
     // Don't have the info we need, load default settings and go into setup
     iUI->EnterSetupMode();
@@ -204,9 +204,9 @@ void loop() {
     #ifdef DEBUG_GENERAL
       Serial.println(F("loop() call detected the Arduino has been on for a month, need to reset"));
     #endif
-    asm volatile ("  jmp 0"); 
+    asm volatile ("  jmp 0");
   }
-  
+
   // Give all the modules a chance to do some work - While we used to use mini-ticks to support multiple Software-emulated serial connections, switching away from streaming mode
   // on the serial sensors negates the need to employ these extra steps.
   iHeat->DoTick();
@@ -214,6 +214,6 @@ void loop() {
   iO2->DoTick();
   iHeat->DoQuickTick();
   iLight->DoTick();
-  iUI->DoTick(); 
+  iUI->DoTick();
   iPi->DoTick();
 }
