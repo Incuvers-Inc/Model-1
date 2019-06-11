@@ -55,7 +55,7 @@ class IncuversPiLink {
           char* includedCRC = strtok(NULL, "$");
           char* payload = strtok(NULL, "$"); // dump the rest of the message into this variable in order to computer the CRC
           char* ignoredData = strtok(stringRead, "$"); // return to the same location in the string in order to extract the parameters
-          
+
           if (CheckCRCOnMessage(includedCRC, payload))
           {
             boolean processingComplete = false;
@@ -86,6 +86,12 @@ class IncuversPiLink {
                     Serial.println(F("Requested CO2 set point is outside of min/max"));
 #endif
                   }
+                } else if (strcmp(param, "CFA") == 0) {
+                  this->incSet->freshAirCalibrateCO2();
+#ifdef DEBUG_PILINK
+                  Serial.println(F("CO2 Calibration requested"));
+#endif
+
                 } else if (strcmp(param, "OP") == 0) {
                   float newO2 = (float)value * 0.01;
                   if (newO2 > OO_MIN && newO2 < OO_MAX) {

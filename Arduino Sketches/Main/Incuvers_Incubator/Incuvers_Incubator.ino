@@ -80,7 +80,7 @@
 //#define DEBUG_CO2 true
 //#define DEBUG_O2 true
 //#define DEBUG_TEMP true
-//#define DEBUG_PILINK true
+#define DEBUG_PILINK true
 //#define DEBUG_LIGHT true
 //#define DEBUG_MEMORY true
 
