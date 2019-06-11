@@ -86,7 +86,7 @@ class IncuversPiLink {
                     Serial.println(F("Requested CO2 set point is outside of min/max"));
 #endif
                   }
-                } else if (strcmp(param, "CFA") == 0) {
+                } else if (strcmp(param, "CG") == 0) {
                   this->incSet->freshAirCalibrateCO2();
 #ifdef DEBUG_PILINK
                   Serial.println(F("CO2 Calibration requested"));
