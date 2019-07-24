@@ -67,14 +67,14 @@ struct SettingsStruct {
 
 struct VolatileValuesStruct {
   bool wifiMACSet;
-  byte wifiMAC[18];
+  char wifiMAC[18];
   bool wiredMACSet;
-  byte wiredMAC[18];
+  char wiredMAC[18];
   bool ipV4Set;
-  byte activeV4IP[16];
+  char activeV4IP[16];
   bool ipV6Set;
-  byte activeV6IP[42];
-  byte piSerial[18];
+  char activeV6IP[42];
+  char piSerial[18];
   byte valuesVersion;  
 };
 
@@ -577,7 +577,7 @@ class IncuversSettingsHandler {
       return serial;
     }
 
-    void setSerial(byte serial[]) {
+    void setSerial(char serial[]) {
       strcpy(this->settingsRuntime.piSerial, (char *) serial);
       this->settingsRuntime.valuesVersion++;
     }
@@ -596,7 +596,7 @@ class IncuversSettingsHandler {
       }
     }
 
-    void setIP4(byte ip[]) {
+    void setIP4(char ip[]) {
       strcpy(this->settingsRuntime.activeV4IP, (char *) ip);
       this->settingsRuntime.ipV4Set = true;
       this->settingsRuntime.valuesVersion++;
@@ -612,7 +612,7 @@ class IncuversSettingsHandler {
       }
     }
 
-    void setWireMAC(byte mac[]) {
+    void setWireMAC(char mac[]) {
       strcpy(this->settingsRuntime.wiredMAC, (char *) mac);
       this->settingsRuntime.wiredMACSet = true;
       this->settingsRuntime.valuesVersion++;
@@ -628,7 +628,7 @@ class IncuversSettingsHandler {
       }
     }
 
-    void setWifiMAC(byte mac[]) {
+    void setWifiMAC(char mac[]) {
       strcpy(this->settingsRuntime.wifiMAC, (char *) mac);
       this->settingsRuntime.wifiMACSet = true;
       this->settingsRuntime.valuesVersion++;

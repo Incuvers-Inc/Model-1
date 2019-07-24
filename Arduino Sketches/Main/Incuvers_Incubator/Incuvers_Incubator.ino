@@ -79,7 +79,7 @@
 //#define DEBUG_EM true
 //#define DEBUG_CO2 true
 //#define DEBUG_O2 true
-#define DEBUG_TEMP true
+//#define DEBUG_TEMP true
 //#define DEBUG_PILINK true
 //#define DEBUG_LIGHT true
 //#define DEBUG_MEMORY true
@@ -139,10 +139,8 @@
 #ifdef INCLUDE_CO2
   #include "Env_CO2_COZIR.h"
 #endif
-#ifdef INCLUDE_LIGHT
-  #include "Env_Light.h"
-#endif
 
+#include "Env_Light.h"
 #include "Env_Heat.h"
 #include "Incuvers_Settings.h"
 #include "Incuvers_UI.h"
