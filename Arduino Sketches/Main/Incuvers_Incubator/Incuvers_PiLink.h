@@ -19,6 +19,9 @@ class IncuversPiLink {
     // A command line may not be longer than 64 characters (due to the default Arduino buffer size)
     void CheckForCommands() {
       if (PILINK_SERIALHANDLE.available()) {
+#ifdef DEBUG_PILINK
+        Serial.println(F("PILINK_SERIALHANDLE IS AVAILABLE"));
+#endif
         boolean lineComplete = false;
         int strLen = 0;
         char stringRead[MAX_INPUT_MESSAGE_SIZE + 1] = "";
@@ -150,7 +153,13 @@ class IncuversPiLink {
           //msgLen > 0 && msgLen <= MAX_PAYLOAD_SIZE && strLen == (msgLen + strlen(msgLenText)
 #endif
         }
+      } else {
+      // if false or not plink handle is not available
+#ifdef DEBUG_PILINK
+         Serial.println(F("PILINK_SERIALHANDLE is not available");
+#endif
       }
+
     }
 
     bool CheckCRCOnMessage(char* oldCRC, char* msg) {
