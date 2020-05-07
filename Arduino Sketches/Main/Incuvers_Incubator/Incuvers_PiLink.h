@@ -156,7 +156,7 @@ class IncuversPiLink {
       } else {
       // if false or not plink handle is not available
 #ifdef DEBUG_PILINK
-         Serial.println(F("PILINK_SERIALHANDLE is not available");
+         Serial.println(F("PILINK_SERIALHANDLE is not available"));
 #endif
       }
 
