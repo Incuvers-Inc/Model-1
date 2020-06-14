@@ -2,7 +2,7 @@
 
 class IncuversSerialSensor {
   private:
-#ifndef USE_2560 
+#ifndef USE_2560
     SoftwareSerial* dC;
 #else
     HardwareSerial* dC;
@@ -12,8 +12,8 @@ class IncuversSerialSensor {
 
   public:
     void Initialize(int pinRx, int pinTx, String modeSet, String reqStr) {
-      
-#ifndef USE_2560 
+
+#ifndef USE_2560
       this->dC = new SoftwareSerial(pinRx, pinTx); // Rx,Tx
 #else
       switch (pinRx) {
@@ -37,7 +37,7 @@ class IncuversSerialSensor {
           break;
       }
 #endif
-      this->setupString = modeSet;      
+      this->setupString = modeSet;
       this->requestString = reqStr;
 
       //this->StartSensor();
@@ -48,12 +48,12 @@ class IncuversSerialSensor {
       String resp = "";
       char inChar;
       long escapeAfter = millis() + READSENSOR_TIMEOUT;
-      
+
       #ifdef DEBUG_SERIAL
         Serial.println(F("Starting..."));
       #endif
       this->dC->begin(9600);
-      
+
       #ifdef DEBUG_SERIAL
         Serial.print(F("InitISS - modeSet: "));
         Serial.print(this->setupString);
@@ -61,11 +61,11 @@ class IncuversSerialSensor {
       #endif
       this->dC->print(this->setupString);
       this->dC->print("\r\n");
-      
+
       while(!confirmed && escapeAfter > millis()) {
         if (this->dC->available() > 0) {
            inChar = (char)this->dC->read();
-           if (inChar != '\n' && inChar != '\r' ) {    
+           if (inChar != '\n' && inChar != '\r' ) {
              resp += inChar;
            }
            if (inChar == '\n') {
@@ -73,7 +73,7 @@ class IncuversSerialSensor {
             #ifdef DEBUG_SERIAL
               Serial.print(resp);
             #endif
-            confirmed = true;   
+            confirmed = true;
            }
         }
       }
@@ -81,7 +81,7 @@ class IncuversSerialSensor {
         Serial.println("");
       #endif
     }
-    
+
 
     String GetSerialSensorReading(int minLen, int maxLen) {
       #ifdef DEBUG_SERIAL
@@ -91,7 +91,7 @@ class IncuversSerialSensor {
           Serial.print(maxLen);
           Serial.println(F(")"));
       #endif
-    
+
       char inChar;
       String inString = "";            // string to hold incoming data from a serial sensor
       boolean stringComplete = false;    // was all data from sensor received? Check
@@ -100,11 +100,11 @@ class IncuversSerialSensor {
       int j = 0;
       long escapeAfter = millis() + READSENSOR_TIMEOUT;
 
-      #ifndef USE_2560 
+      #ifndef USE_2560
         // We don't have a hardware serial interface, so make our software serial interface active.
         this->dC->listen();
       #endif
-      
+
       while (!dataReadComplete) {
         // request a reading
         this->dC->print(this->requestString);
@@ -117,16 +117,16 @@ class IncuversSerialSensor {
         i=0;
         inString = "";
         stringComplete = false;
-         
+
         while(!stringComplete) {
           if (this->dC->available() > 0) {
             inChar = (char)this->dC->read();
-            if (inChar != '\n' && inChar != '\r' ) {    
+            if (inChar != '\n' && inChar != '\r' ) {
               inString += inChar;
               i++;
             }
             if (inChar == '\n' && inString.length() > minLen) {
-              stringComplete = true;   
+              stringComplete = true;
               #ifdef DEBUG_SERIAL
                 Serial.print(F("\tCompleted String: "));
                 Serial.println(inString);
@@ -160,7 +160,7 @@ class IncuversSerialSensor {
         }
 
         j++;
-        
+
         if(escapeAfter < millis()){
           #ifdef DEBUG_SERIAL
             Serial.print(F("\tEscaping after "));
@@ -169,7 +169,7 @@ class IncuversSerialSensor {
           #endif
           dataReadComplete=true;
         }
-    
+
       }
 
       // clear the queue, just in case
@@ -187,6 +187,104 @@ class IncuversSerialSensor {
       #endif
       return inString;
     }
+
+    String SendStringCommand(String commandString) {
+      #ifdef DEBUG_SERIAL
+          Serial.print(F("SenString("));
+          Serial.print(minLen);
+          Serial.print(F(","));
+          Serial.print(maxLen);
+          Serial.println(F(")"));
+      #endif
+      char inChar;
+      String inString = "";            // string to hold incoming data from a serial sensor
+      boolean stringComplete = false;    // was all data from sensor received? Check
+      boolean dataReadComplete = false;
+      int minLen = 6;
+      int maxLen = 10;
+      int i = 0;
+      int j = 0;
+      long escapeAfter = millis() + READSENSOR_TIMEOUT;
+
+      #ifndef USE_2560
+        // We don't have a hardware serial interface, so make our software serial interface active.
+        this->dC->listen();
+      #endif
+
+      while (!dataReadComplete) {
+        // request a reading
+        this->dC->print(commandString);
+        this->dC->print("\r\n");
+        #ifdef DEBUG_SERIAL
+          Serial.print(F("Sending Request: "));
+          Serial.println(commandString);
+        #endif
+        delay(200); // there will likely be a 100ms delay on the response
+        i=0;
+        inString = "";
+        stringComplete = false;
+
+        while(!stringComplete) {
+          if (this->dC->available() > 0) {
+            inChar = (char)this->dC->read();
+            if (inChar != '\n' && inChar != '\r' ) {
+              inString += inChar;
+              i++;
+            }
+            if (inChar == '\n' && inString.length() > minLen) {
+              stringComplete = true;
+              #ifdef DEBUG_SERIAL
+                Serial.print(F("\tCompleted String: "));
+                Serial.println(inString);
+              #endif
+            }
+          }
+
+          if (escapeAfter < millis()) {
+            #ifdef DEBUG_SERIAL
+              Serial.println(F("\tEscaping the try due to timeout"));
+            #endif
+            // fake the end of the string as we hit the timeout
+            stringComplete = true;
+          }
+        }
+
+        if (i >= minLen && i <= maxLen) {
+          dataReadComplete = true;
+
+          #ifdef DEBUG_SERIAL
+            Serial.print(F("Data read complete: "));
+            Serial.println(i);
+          #endif
+        } else {
+          #ifdef DEBUG_SERIAL
+            Serial.print(F("Data read incomplete with i: "));
+            Serial.print(i);
+            Serial.print(F(", string: "));
+            Serial.print(inString);
+          #endif
+        }
+
+        j++;
+
+        if(escapeAfter < millis()){
+          #ifdef DEBUG_SERIAL
+            Serial.print(F("\tEscaping after "));
+            Serial.print(j);
+            Serial.println(F(" loops"));
+          #endif
+          dataReadComplete=true;
+        }
+
+      }
+
+      #ifdef DEBUG_SERIAL
+        Serial.print(F("\tReturning: "));
+        Serial.println(inString);
+      #endif
+      return inString;
+    }
+
 };
 
 boolean IsNumeric(String string) {
@@ -266,8 +364,6 @@ int GetIntegerSensorReading(char index, String sensorOutput, int invalidValue) {
     Serial.print(F("\tValue: "));
     Serial.println(value);
   #endif
-  
+
   return value;
 }
-
-

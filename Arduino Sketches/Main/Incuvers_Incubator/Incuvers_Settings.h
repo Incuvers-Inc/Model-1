@@ -1,7 +1,7 @@
 // Hardware settings definitions
 #define HARDWARE_IDENT_OLD "M1c"
 #define HARDWARE_IDENT_NEW "M1I"
-#define HARDWARE_ADDRS 4 
+#define HARDWARE_ADDRS 4
 
 // Settings definitions
 #define SETTINGS_IDENT_CURR 112
@@ -75,7 +75,7 @@ struct VolatileValuesStruct {
   bool ipV6Set;
   char activeV6IP[42];
   char piSerial[18];
-  byte valuesVersion;  
+  byte valuesVersion;
 };
 
 class IncuversSettingsHandler {
@@ -83,50 +83,50 @@ class IncuversSettingsHandler {
     HardwareStruct settingsHardware;
     SettingsStruct settingsHolder;
     VolatileValuesStruct settingsRuntime;
-  
+
     IncuversHeatingSystem* incHeat;
     IncuversLightingSystem* incLight;
     IncuversCO2System* incCO2;
     IncuversO2System* incO2;
 
-    boolean newHardwareConfig; 
-    
+    boolean newHardwareConfig;
+
     int personalityCount;
 
     void InitializeRuntimeSettings() {
-      strcpy_P(this->settingsRuntime.wifiMAC, (const char *) F("000000000000"));  
+      strcpy_P(this->settingsRuntime.wifiMAC, (const char *) F("000000000000"));
       this->settingsRuntime.wifiMACSet = false;
-      strcpy_P(this->settingsRuntime.wiredMAC, (const char *) F("000000000000"));  
+      strcpy_P(this->settingsRuntime.wiredMAC, (const char *) F("000000000000"));
       this->settingsRuntime.wiredMACSet = false;
       strcpy_P(this->settingsRuntime.activeV4IP, (const char *) F("0.0.0.0"));
       this->settingsRuntime.ipV4Set = false;
       strcpy_P(this->settingsRuntime.activeV6IP, (const char *) F("0::0"));
       this->settingsRuntime.ipV6Set = false;
       strcpy_P(this->settingsRuntime.piSerial, (const char *) F("0"));
-      this->settingsRuntime.valuesVersion = 0;  
+      this->settingsRuntime.valuesVersion = 0;
     }
-    
+
     int VerifyEEPROMHeader(int startAddress, boolean isHardware) {
       #ifdef DEBUG_EEPROM
         Serial.println(F("VerifyHead"));
       #endif
-      
+
       byte eepromContent[4];
       boolean success = true;
       boolean newStyle = false;
       int ret;
-      
+
       int j;
-      if (isHardware) { 
+      if (isHardware) {
         j = 3;
       } else {
         j = 1;
       }
-    
+
       for (int i = 0; i < j; i++) {
         eepromContent[i] = EEPROM.read(startAddress + i);
       }
-    
+
       if (isHardware) {
         for (int i = 0; i < j; i++) {
           if (eepromContent[i] != HARDWARE_IDENT_NEW[i]) {
@@ -154,17 +154,17 @@ class IncuversSettingsHandler {
         }
       } else {
         if (eepromContent[0] == SETTINGS_IDENT_CURR) {
-          ret = (int)eepromContent[0]; 
+          ret = (int)eepromContent[0];
         } else {
           ret = -1;
         }
       }
-      
+
       #ifdef DEBUG_EEPROM
         Serial.print(F("  /VerifyHead; returning: "));
         Serial.println(ret);
       #endif
-      
+
       return ret;
     }
 
@@ -173,9 +173,9 @@ class IncuversSettingsHandler {
         Serial.println(F("HardwareSet"));
       #endif
       int headerCheck;
-      
+
       headerCheck = VerifyEEPROMHeader(HARDWARE_ADDRS, true);
-    
+
       if (headerCheck == -1) {
         // uninitialized hardware
         #ifdef DEBUG_EEPROM
@@ -188,9 +188,9 @@ class IncuversSettingsHandler {
           Serial.print(sizeof(settingsHardware));
           Serial.println(F(" bytes of hardware definitions."));
         #endif
-        
+
         for (int i = 0; i < sizeof(settingsHardware); i++) {
-          *((char*)&settingsHardware + i) = EEPROM.read(HARDWARE_ADDRS + i);    
+          *((char*)&settingsHardware + i) = EEPROM.read(HARDWARE_ADDRS + i);
         }
         #ifdef DEBUG_EEPROM
         Serial.print(settingsHardware.ident[0]);
@@ -255,11 +255,11 @@ class IncuversSettingsHandler {
         Serial.print(F(" @ "));
         Serial.println(SETTINGS_ADDRS);
       #endif
-      
+
       for (unsigned int i = 0; i < sizeof(this->settingsHolder); i++) {
-        *((char*)&this->settingsHolder + i) = EEPROM.read(SETTINGS_ADDRS + i);    
+        *((char*)&this->settingsHolder + i) = EEPROM.read(SETTINGS_ADDRS + i);
       }
- 
+
       #ifdef DEBUG_EEPROM
         Serial.println(settingsHolder.ident);
         Serial.println(settingsHolder.fanMode);
@@ -276,9 +276,9 @@ class IncuversSettingsHandler {
       #endif
       return 1;
     }
-    
+
   public:
-    
+
     // Defaults
     void ResetSettingsToDefaults()
     {
@@ -289,13 +289,13 @@ class IncuversSettingsHandler {
       this->settingsHolder.fanMode = 4;
       // Heat setup
       this->settingsHolder.heatMode = 1;
-      this->settingsHolder.heatSetPoint = TEMPERATURE_DEF; 
+      this->settingsHolder.heatSetPoint = TEMPERATURE_DEF;
       // CO2 setup
       this->settingsHolder.CO2Mode = 2;
-      this->settingsHolder.CO2SetPoint = CO2_DEF; 
+      this->settingsHolder.CO2SetPoint = CO2_DEF;
       // O2 setup
       this->settingsHolder.O2Mode = 2;
-      this->settingsHolder.O2SetPoint = OO_DEF; 
+      this->settingsHolder.O2SetPoint = OO_DEF;
       // Lighting
       this->settingsHolder.lightMode = 0;
       this->settingsHolder.millisOn =  60000;  // 14 hrs = 50400000 milliseconds
@@ -308,14 +308,14 @@ class IncuversSettingsHandler {
         Serial.println(F("/Defaults"));
       #endif
     }
-    
+
     void PerformSaveSettings() {
       #ifdef DEBUG_EEPROM
         Serial.println(F("SaveSettings"));
       #endif
-    
+
       this->settingsHolder.ident = SETTINGS_IDENT_CURR;
-    
+
       #ifdef DEBUG_EEPROM
         Serial.print(F("\tID: "));
         Serial.print(SETTINGS_IDENT_CURR);
@@ -323,26 +323,26 @@ class IncuversSettingsHandler {
         Serial.print(sizeof(settingsHolder));
         Serial.print(" bytes");
       #endif
-      
+
       for (unsigned int i=0; i < sizeof(settingsHolder); i++) {
         EEPROM.write(SETTINGS_ADDRS + i, *((char*)&this->settingsHolder + i));
         #ifdef DEBUG_EEPROM
           Serial.print(".");
         #endif
       }
-      
+
       #ifdef DEBUG_EEPROM
         Serial.println("  Done.");
         Serial.println(F("/SaveSettings"));
       #endif
     }
-    
+
     int PerformLoadSettings() {
       #ifdef DEBUG_EEPROM
         Serial.println(F("LoadSettings"));
       #endif
       int runMode = 0;
-      
+
       if (ReadHardwareSettings()) {
         if (VerifyEEPROMHeader((int)SETTINGS_ADDRS, false) == SETTINGS_IDENT_CURR) {
           runMode = ReadCurrentSettings();
@@ -353,14 +353,14 @@ class IncuversSettingsHandler {
           #endif
           ResetSettingsToDefaults();
         }
-      } 
-    
+      }
+
       #ifdef DEBUG_EEPROM
         Serial.println(F("/LoadSettings"));
       #endif
       return runMode;
     }
-    
+
     void CheckSettings() {
       this->personalityCount = 0;
       if (this->settingsHolder.heatMode == 1) {
@@ -375,7 +375,7 @@ class IncuversSettingsHandler {
       if (this->settingsHolder.O2Mode > 0) {
         this->personalityCount++;
       }
-    
+
       #ifdef DEBUG_GENERAL
         Serial.print(F("Counted "));
         Serial.print(this->personalityCount);
@@ -387,7 +387,7 @@ class IncuversSettingsHandler {
       this->incHeat = iHeat;
 
       if (this->newHardwareConfig) {
-        this->incHeat->SetupNewHeating(PINASSIGN_HEATDOOR, 
+        this->incHeat->SetupNewHeating(PINASSIGN_HEATDOOR,
                         PINASSIGN_HEATCHAMBER,
                         this->settingsHardware.sensorAddrDoorTemp[3],
                         this->settingsHardware.sensorAddrDoorTemp[1],
@@ -397,9 +397,9 @@ class IncuversSettingsHandler {
                         this->settingsHolder.fanMode,
                         this->settingsHolder.heatSetPoint);
       } else {
-        this->incHeat->SetupHeating(PINASSIGN_HEATDOOR, 
-                        PINASSIGN_HEATCHAMBER, 
-                        PINASSIGN_ONEWIRE_BUS, 
+        this->incHeat->SetupHeating(PINASSIGN_HEATDOOR,
+                        PINASSIGN_HEATCHAMBER,
+                        PINASSIGN_ONEWIRE_BUS,
                         this->settingsHardware.sensorAddrDoorTemp,
                         this->settingsHardware.sensorAddrChamberTemp,
                         this->settingsHolder.heatMode,
@@ -427,11 +427,11 @@ class IncuversSettingsHandler {
 
     void AttachIncuversModule(IncuversCO2System* iCO2) {
       this->incCO2 = iCO2;
-      
-      this->incCO2->SetupCO2(this->settingsHardware.CO2RxPin, 
+
+      this->incCO2->SetupCO2(this->settingsHardware.CO2RxPin,
                              this->settingsHardware.CO2TxPin,
                              this->settingsHardware.CO2RelayPin);
-      this->incCO2->UpdateMode(this->settingsHolder.CO2Mode);                      
+      this->incCO2->UpdateMode(this->settingsHolder.CO2Mode);
       this->incCO2->SetSetPoint(this->settingsHolder.CO2SetPoint);
     }
 
@@ -441,11 +441,11 @@ class IncuversSettingsHandler {
 
     void AttachIncuversModule(IncuversO2System* iO2) {
       this->incO2 = iO2;
-      
-      this->incO2->SetupO2(this->settingsHardware.O2RxPin, 
+
+      this->incO2->SetupO2(this->settingsHardware.O2RxPin,
                            this->settingsHardware.O2TxPin,
                            this->settingsHardware.O2RelayPin);
-      this->incO2->UpdateMode(this->settingsHolder.O2Mode);                      
+      this->incO2->UpdateMode(this->settingsHolder.O2Mode);
       this->incO2->SetSetPoint(this->settingsHolder.O2SetPoint);
     }
 
@@ -475,6 +475,7 @@ class IncuversSettingsHandler {
       piLink = String(piLink + F("&CC|") + String(incCO2->getCO2Level() * 100, 0));             // CO2, reading
       piLink = String(piLink + F("&CS|") + GetIndicator(incCO2->isCO2Open(), incCO2->isCO2Stepping(), false, true));  // CO2, status
       piLink = String(piLink + F("&CA|") + GetIndicator(incCO2->isAlarmed(), false, false, true));                 // CO2, alarms
+      piLink = String(piLink + F("&CG|") + String(incCO2->isRecentlyCalibrated(), DEC));             // CO2, reading
       // O2 system
       piLink = String(piLink + F("&OM|") + String(this->settingsHolder.O2Mode, DEC));           // O2, mode
       piLink = String(piLink + F("&OP|") + String(this->settingsHolder.O2SetPoint * 100, 0));   // O2, setpoint
@@ -489,17 +490,17 @@ class IncuversSettingsHandler {
 
       if (includeCRC) {
         CRC32 crc;
-        
+
         for (int i = 0; i < piLink.length(); i++) {
           crc.update(piLink[i]);
         }
-  
+
         piLink = String(String(piLink.length(), DEC) + F("~") + PadHexToLen(String(crc.finalize(), HEX), 8) + F("$") + piLink);   // CRC to detect corrupted entries
       }
- 
+
       return piLink;
     }
-    
+
     int getPersonalityCount() {
       return personalityCount;
     }
@@ -521,7 +522,7 @@ class IncuversSettingsHandler {
       this->settingsHolder.fanMode = mode;
       this->incHeat->UpdateFanMode(mode);
     }
-    
+
     float getTemperatureSetPoint() {
       return this->settingsHolder.heatSetPoint;
     }
@@ -539,7 +540,7 @@ class IncuversSettingsHandler {
       this->settingsHolder.CO2Mode = mode;
       this->incCO2->UpdateMode(mode);
     }
-    
+
     float getCO2SetPoint() {
       return this->settingsHolder.CO2SetPoint;
     }
@@ -547,6 +548,10 @@ class IncuversSettingsHandler {
     void setCO2SetPoint(float newValue) {
       this->settingsHolder.CO2SetPoint = newValue;
       this->incCO2->SetSetPoint(this->settingsHolder.CO2SetPoint);
+    }
+
+    void freshAirCalibrateCO2() {
+      this->incCO2->CalibrateFreshAir();
     }
 
     int getO2Mode() {
@@ -557,7 +562,7 @@ class IncuversSettingsHandler {
       this->settingsHolder.O2Mode = mode;
       this->incO2->UpdateMode(mode);
     }
-    
+
     float getO2SetPoint() {
       return this->settingsHolder.O2SetPoint;
     }
@@ -568,9 +573,9 @@ class IncuversSettingsHandler {
     }
 
     String getHardware() {
-      return String(this->settingsHardware.hVer[0])+"."+String(this->settingsHardware.hVer[1])+"."+String(this->settingsHardware.hVer[2]);  
+      return String(this->settingsHardware.hVer[0])+"."+String(this->settingsHardware.hVer[1])+"."+String(this->settingsHardware.hVer[2]);
     }
-    
+
     String getSerial() {
       String serial = String( (char *) this->settingsRuntime.piSerial);
       serial.trim();
@@ -601,7 +606,7 @@ class IncuversSettingsHandler {
       this->settingsRuntime.ipV4Set = true;
       this->settingsRuntime.valuesVersion++;
     }
-    
+
     String getWireMAC() {
       if (this->settingsRuntime.wiredMACSet) {
         String wireMAC = String( (char *) this->settingsRuntime.wiredMAC);
@@ -617,7 +622,7 @@ class IncuversSettingsHandler {
       this->settingsRuntime.wiredMACSet = true;
       this->settingsRuntime.valuesVersion++;
     }
-    
+
     String getWifiMAC() {
       if (this->settingsRuntime.wifiMACSet) {
         String wifiMAC = String( (char *) this->settingsRuntime.wifiMAC);
@@ -633,7 +638,7 @@ class IncuversSettingsHandler {
       this->settingsRuntime.wifiMACSet = true;
       this->settingsRuntime.valuesVersion++;
     }
-       
+
     void MakeSafeState() {
       incHeat->MakeSafeState();
       incLight->MakeSafeState();
@@ -656,7 +661,7 @@ class IncuversSettingsHandler {
       this->settingsHolder.lightMode = mode;
       this->incLight->UpdateMode(mode);
     }
-    
+
     boolean HasCO2Sensor() {
       return settingsHardware.hasCO2Sensor;
     }
@@ -679,16 +684,16 @@ class IncuversSettingsHandler {
     boolean HasLighting() {
       return settingsHardware.lightingSupport;
     }
-        
+
     void ResetAlarms() {
       incHeat->ResetAlarms();
       incCO2->ResetAlarms();
       incO2->ResetAlarms();
     }
-    
+
     int getAlarmMode() {
       return this->settingsHolder.alarmMode;
     }
-    
+
 
 };
